@@ -99,7 +99,27 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .sg div:active,.sg div:hover{background:var(--sf2)}.sg small{color:var(--mut);white-space:nowrap}.sg b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sg .hint{color:var(--mut);font-size:12.5px;cursor:default}.sg .hint:hover{background:none}
 .ro nav .add,.ro .adm{display:none!important}
-#gate{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:28px;max-width:420px;margin:auto}#gate h1{font-size:30px;letter-spacing:-.5px}#gate .sub{color:var(--mut);margin:4px 0 22px}
+#gate{min-height:100%;max-width:440px;margin:auto;padding:calc(env(safe-area-inset-top) + 16px) 20px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;justify-content:center}
+.gt-hdr{padding:4px 2px 0}.gt-logo{font-family:Sora,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}.gt-logo em,.gt-title em{font-style:normal;color:var(--pri)}
+.gt-wrap{position:relative;margin-top:16px}
+.gt-ico{position:absolute;top:-8px;left:-6px;z-index:3;width:52px;height:52px;border-radius:14px;background:var(--sf);color:var(--pri);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14)}
+.gt-hero{position:relative;border-radius:26px;overflow:hidden;box-shadow:0 12px 30px rgba(15,61,46,.28)}
+.gt-bg{height:clamp(190px,50vw,240px);background:linear-gradient(135deg,#04170f,#0b3d2c 40%,#0f6a47 72%,#1b9366);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.gt-glow{position:absolute;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(110,255,190,.38) 0%,transparent 70%)}
+.gt-art{position:relative;z-index:1;width:min(58%,190px);height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.3));margin-top:14px}
+.gt-wave{position:absolute;left:0;right:0;bottom:0;width:100%;height:58px;opacity:.7}
+.gt-badge{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:2;background:rgba(255,255,255,.93);color:#0f5c3f;padding:5px 13px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.gt-pill{position:absolute;bottom:12px;right:12px;z-index:2;background:#12805c;color:#fff;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600}
+.gt-body{padding-top:22px}
+.gt-title{font-size:clamp(24px,7vw,30px);line-height:1.15;letter-spacing:-.8px;margin-bottom:9px}
+.gt-sub{color:var(--mut);margin-bottom:22px;line-height:1.6}
+.gt-hint{text-align:center;color:var(--mut);font-size:12.5px;margin:8px 0 14px}
+#gate .btn{display:flex;align-items:center;justify-content:center;gap:9px;border-radius:999px;padding:16px 22px;font-size:15.5px;letter-spacing:.1px;transition:transform .12s}
+#gate .btn:active{transform:scale(.98)}
+#gate .btn:not(.sec){box-shadow:0 10px 24px color-mix(in srgb,var(--pri) 38%,transparent)}
+#gate .btn.sec{background:var(--sf);border:1.5px solid var(--ln);color:var(--ink)}
+#gate input{border-radius:999px;padding:14px 20px}
+#gate label{margin-left:14px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -108,20 +128,43 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 <body>
 
 <div id="gate" class="hide">
-  <h1>PBMoney</h1>
-  <p class="sub">Buku kas Paguyuban Borez</p>
-  <div id="gChoose">
-    <button class="btn" onclick="chooseMember()">Masuk sebagai Anggota</button>
-    <p style="color:var(--mut);font-size:12.5px;text-align:center;margin:6px 0 16px">Hanya melihat, tanpa kata sandi</p>
-    <button class="btn sec" onclick="gateView('admin')">Masuk sebagai Admin</button>
+  <div class="gt-hdr"><div class="gt-logo">PB<em>Money</em></div></div>
+  <div class="gt-wrap">
+    <div class="gt-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="7" cy="15" r="1" fill="currentColor"/></svg></div>
+    <div class="gt-hero">
+      <div class="gt-badge">● KAS TRANSPARAN</div>
+      <div class="gt-bg">
+        <div class="gt-glow"></div>
+        <svg class="gt-art" viewBox="0 0 120 92" fill="none" aria-hidden="true">
+          <path d="M8 30Q34 21 60 33V84Q34 73 8 82Z" fill="rgba(255,255,255,.94)"/>
+          <path d="M112 30Q86 21 60 33V84Q86 73 112 82Z" fill="rgba(255,255,255,.80)"/>
+          <path d="M60 33V84" stroke="rgba(15,92,63,.35)" stroke-width="1.2"/>
+          <g stroke="#0f5c3f" stroke-width="2.2" stroke-linecap="round" opacity=".75"><path d="M18 44Q30 40 48 46"/><path d="M18 54Q30 50 48 56"/><path d="M18 64Q30 60 48 66"/></g>
+          <g stroke-width="2.4" stroke-linecap="round"><path d="M72 46Q84 43 100 47" stroke="#12805c"/><path d="M72 56Q84 53 100 57" stroke="#b93a28"/><path d="M72 66Q84 63 92 66" stroke="#12805c"/></g>
+          <circle cx="94" cy="22" r="15" fill="#f5c542" stroke="#e0a81f" stroke-width="2"/>
+          <text x="94" y="27" text-anchor="middle" font-family="Sora,sans-serif" font-size="13" font-weight="700" fill="#7a5a00">Rp</text>
+        </svg>
+        <svg class="gt-wave" viewBox="0 0 340 60" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,55 50,42 90,48 140,28 180,33 220,14 270,18 340,3" stroke="rgba(130,255,200,.55)" stroke-width="2" fill="none"/></svg>
+      </div>
+      <div class="gt-pill">Paguyuban Borez</div>
+    </div>
   </div>
-  <div id="gAdmin" class="hide">
-    <label>Kata sandi admin</label><input id="gPw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()">
-    <div class="err" id="gErr"></div>
-    <div style="display:grid;gap:8px"><button class="btn" onclick="adminLogin()">Masuk</button><button class="btn sec" onclick="gateView('choose')">Kembali</button></div>
+  <div class="gt-body">
+    <h1 class="gt-title">Kas paguyuban, <em>rapi &amp; transparan</em></h1>
+    <p class="gt-sub">Catat kas masuk, kas keluar, dan iuran anggota Paguyuban Borez dalam satu buku kas.</p>
+    <div id="gChoose">
+      <button class="btn" onclick="chooseMember()"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Masuk sebagai Anggota</button>
+      <p class="gt-hint">Hanya melihat, tanpa kata sandi</p>
+      <button class="btn sec" onclick="gateView('admin')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Masuk sebagai Admin</button>
+    </div>
+    <div id="gAdmin" class="hide">
+      <label>Kata sandi admin</label><input id="gPw" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" onkeydown="if(event.key==='Enter')adminLogin()">
+      <div class="err" id="gErr"></div>
+      <div style="display:grid;gap:10px"><button class="btn" onclick="adminLogin()">Masuk</button><button class="btn sec" onclick="gateView('choose')">Kembali</button></div>
+    </div>
+    <div id="gLoad" class="hide"><p class="gt-hint" style="margin:6px 0">Menghubungkan…</p></div>
+    <div id="gFail" class="hide"><div class="err" id="gFailMsg" style="white-space:pre-wrap"></div><button class="btn sec" style="margin-top:12px" onclick="location.reload()">Coba lagi</button></div>
   </div>
-  <div id="gLoad" class="hide"><p class="sub" style="text-align:center">Menghubungkan…</p></div>
-  <div id="gFail" class="hide"><div class="err" id="gFailMsg" style="white-space:pre-wrap"></div><button class="btn sec" style="margin-top:12px" onclick="location.reload()">Coba lagi</button></div>
 </div>
 
 <div id="app" class="hide">
