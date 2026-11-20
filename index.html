@@ -131,6 +131,31 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
+
+/* ═══ ELEVASI 3D: kartu timbul, sorotan tepi atas, bayangan berlapis ═══ */
+:root{--sf-hi:#fff;--sf-lo:#f1f4fb;--hl:rgba(255,255,255,.95);--sh1:rgba(16,30,70,.10);--sh2:rgba(16,30,70,.15);--sh3:rgba(16,30,70,.17);--insh:rgba(16,30,70,.12)}
+body.dk{--sf-hi:#1b2338;--sf-lo:#0e1220;--hl:rgba(255,255,255,.09);--sh1:rgba(0,0,0,.55);--sh2:rgba(0,0,0,.62);--sh3:rgba(0,0,0,.55);--insh:rgba(0,0,0,.5)}
+.card,.set,.sum>div,.mc,.ev,.mnav{background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3)}
+.mc,.ev{transition:transform .16s ease,box-shadow .16s ease}
+@media(hover:hover){.mc:hover,.ev:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 var(--hl),0 2px 4px var(--sh1),0 14px 24px -8px var(--sh2),0 26px 40px -18px var(--sh3)}}
+.mc:active,.ev:active{transform:translateY(1px) scale(.985);box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1)}
+.hero{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px rgba(0,0,0,.25),0 18px 34px -12px rgba(37,99,235,.6),0 30px 50px -24px rgba(7,11,28,.55)}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.18),rgba(255,255,255,0) 42%);pointer-events:none}
+.hero>*{position:relative}
+.hero .row>div{box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -2px 6px rgba(0,0,0,.18)}
+.seg{box-shadow:inset 0 2px 5px var(--insh)}
+.seg button.on{box-shadow:inset 0 1px 0 var(--hl),0 2px 6px -1px var(--sh2)}
+.dot,.ed,.mc .av{box-shadow:inset 0 1px 0 var(--hl),0 3px 8px -3px var(--sh2)}
+input,select,textarea{box-shadow:inset 0 1px 3px var(--insh)}
+.btn:not(.sec):not(.dng){background:linear-gradient(180deg,color-mix(in srgb,var(--pri) 78%,#fff),var(--pri));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 16px -6px color-mix(in srgb,var(--pri) 72%,transparent);transition:transform .12s}
+.btn.sec{box-shadow:inset 0 1px 0 var(--hl),0 2px 6px -2px var(--sh2)}
+.btn:not(.dng):active{transform:translateY(1px)}
+nav{box-shadow:0 -10px 26px -12px var(--sh2)}
+nav .add{background:linear-gradient(180deg,color-mix(in srgb,var(--pri) 76%,#fff),var(--pri));transform:translateY(-12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 10px 20px -4px rgba(37,99,235,.75),0 4px 8px rgba(0,0,0,.3);transition:transform .12s}
+nav .add:active{transform:translateY(-10px) scale(.94)}
+.sheet{box-shadow:0 -16px 40px rgba(0,0,0,.35),inset 0 1px 0 var(--hl)}
+#toast{box-shadow:0 10px 24px rgba(0,0,0,.35)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
