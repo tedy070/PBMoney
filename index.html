@@ -119,6 +119,8 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 #gate .btn:not(.sec){box-shadow:0 10px 24px color-mix(in srgb,var(--pri) 38%,transparent)}
 #gate .btn.sec{background:var(--sf);border:1.5px solid var(--ln);color:var(--ink)}
 #gate input{border-radius:999px;padding:14px 20px}
+.pw{position:relative}#gate .pw input{padding-right:54px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:var(--mut)}.eye:active{background:var(--sf2)}.eye[aria-pressed=true]{color:var(--pri)}.eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2}
 #gate label{margin-left:14px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
@@ -158,7 +160,7 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
       <button class="btn sec" onclick="gateView('admin')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Masuk sebagai Admin</button>
     </div>
     <div id="gAdmin" class="hide">
-      <label>Kata sandi admin</label><input id="gPw" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" onkeydown="if(event.key==='Enter')adminLogin()">
+      <label>Kata sandi admin</label><div class="pw"><input id="gPw" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" onkeydown="if(event.key==='Enter')adminLogin()"><button type="button" class="eye" id="gEye" onmousedown="event.preventDefault()" onclick="togglePw()" aria-label="Tampilkan kata sandi" aria-pressed="false"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <div class="err" id="gErr"></div>
       <div style="display:grid;gap:10px"><button class="btn" onclick="adminLogin()">Masuk</button><button class="btn sec" onclick="gateView('choose')">Kembali</button></div>
     </div>
@@ -592,8 +594,15 @@ function importFile(el) {
 // ══════════ PERAN & FIREBASE ══════════
 function gateView(n) {
   ['Choose', 'Admin', 'Load', 'Fail'].forEach(k => $('g' + k).classList.toggle('hide', k.toLowerCase() !== n));
-  if (n === 'admin') { $('gErr').textContent = ''; $('gPw').value = ''; setTimeout(() => $('gPw').focus(), 50); }
+  if (n === 'admin') { $('gErr').textContent = ''; $('gPw').value = ''; showPw(false); setTimeout(() => $('gPw').focus(), 50); }
 }
+const EYE_ON = '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>', EYE_OFF = '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 19c-6.4 0-10-7-10-7a18 18 0 0 1 4.1-5M9.9 5.2A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.2 3.2M1 1l22 22M14.1 14.1a3 3 0 0 1-4.2-4.2"/>';
+function showPw(on) {
+  $('gPw').type = on ? 'text' : 'password';
+  const b = $('gEye'); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+  b.firstElementChild.innerHTML = on ? EYE_OFF : EYE_ON;
+}
+function togglePw() { showPw($('gPw').type === 'password'); $('gPw').focus(); }
 function enterApp() {
   $('gate').classList.add('hide'); $('app').classList.remove('hide'); $('nav').classList.remove('hide');
   document.body.classList.toggle('ro', !isAdmin); go('home');
