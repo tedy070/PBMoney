@@ -79,7 +79,7 @@ nav .add svg{margin:0;width:26px;height:26px}
 .sheet h3{font-size:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}.sheet h3 button{font-size:22px;color:var(--mut)}
 .g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 .g2>*{min-width:0}
-input[type=date]{display:block;min-width:0;max-width:100%;min-height:44px;appearance:none;-webkit-appearance:none;text-align:left}
+input[type=date],input[type=time]{display:block;min-width:0;max-width:100%;min-height:44px;appearance:none;-webkit-appearance:none;text-align:left}
 input[type=date]::-webkit-date-and-time-value{text-align:left;min-width:0}
 select{min-width:0;max-width:100%;text-overflow:ellipsis}
 @media(max-width:380px){.g2{grid-template-columns:minmax(0,1fr)}}.amt{font-family:Sora;font-size:22px;font-weight:600}
@@ -122,6 +122,11 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .pw{position:relative}#gate .pw input{padding-right:54px}
 .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:var(--mut)}.eye:active{background:var(--sf2)}.eye[aria-pressed=true]{color:var(--pri)}.eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2}
 #gate label{margin-left:14px}
+.ev{display:flex;gap:12px;align-items:center;background:var(--sf);border-radius:var(--r);padding:12px;margin-top:10px;cursor:pointer}
+.ev.past{opacity:.62}
+.ed{width:52px;flex:none;text-align:center;background:var(--sf2);border-radius:12px;padding:7px 0}.ed b{display:block;font-family:Sora;font-size:20px;line-height:1.1}.ed small{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.ev .m{flex:1;min-width:0}.ev .m b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev .m small{display:block;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eb{flex:none;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--sf2);color:var(--pri);white-space:nowrap}.eb.now{background:var(--in);color:var(--onpri)}.eb.dn{color:var(--mut)}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -179,7 +184,7 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 
 <nav id="nav" class="hide"><div>
   <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Beranda</button>
-  <button data-v="agr"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Anggaran</button>
+  <button data-v="agr"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Paguyuban</button>
   <button class="add" onclick="openTx()" aria-label="Tambah transaksi"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-v="rep"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Laporan</button>
       <button data-v="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Setelan</button>
@@ -223,9 +228,9 @@ function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return tr
 const clean = o => JSON.parse(JSON.stringify(o));
 const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
-let S = { tx: [], members: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', dark: false, name: '' };
-let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, meta: '' };
-let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, saveT, locked = false;
+let S = { tx: [], members: [], events: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', dark: false, name: '' };
+let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, meta: '' };
+let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, saveT, locked = false;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -240,7 +245,7 @@ function cats(t) { return (t === 'in' ? CAT_IN : CAT_OUT).concat(S.cats[t] || []
 function sum(list, t) { return list.filter(x => x.type === t).reduce((a, x) => a + x.amt, 0); }
 const sorted = () => S.tx.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-const dataOf = () => clean({ tx: S.tx, members: S.members, iuran: S.iuran, cats: S.cats, name: S.name });
+const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, iuran: S.iuran, cats: S.cats, name: S.name });
 const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats });
 function savePrefs() { put(PREF, { dark: S.dark, pinHash: S.pinHash }); }
 function loadPrefs() {
@@ -250,7 +255,7 @@ function loadPrefs() {
 }
 function loadLocal() {
   const v = store(KEY) || {};
-  S.tx = toArr(v.tx); S.members = toArr(v.members); S.iuran = v.iuran || 0; S.name = v.name || '';
+  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.iuran = v.iuran || 0; S.name = v.name || '';
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
 }
 // Simpan: mode perangkat -> localStorage; mode cloud -> hanya selisih per item ke RTDB (aman bila dua admin mengedit bersamaan).
@@ -263,15 +268,16 @@ function save() {
     list.forEach(x => { const k = String(x.id), c = clean(x); seen[k] = 1; if (remote[n][k] !== ss(c)) up[n + '/' + k] = c; });
     Object.keys(remote[n]).forEach(k => { if (!seen[k]) up[n + '/' + k] = null; });
   };
-  sync('tx', S.tx); sync('members', S.members);
+  sync('tx', S.tx); sync('members', S.members); sync('events', S.events);
   const m = metaOf(); if (remote.meta !== ss(m)) up.meta = m;
   if (Object.keys(up).length) db.ref('kas').update(up).catch(e => toast('Gagal menyimpan: ' + e.message));
 }
 function applyRemote(v) {
-  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), meta = v.meta || {};
+  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), meta = v.meta || {};
   remote.tx = {}; tx.forEach(x => remote.tx[x.id] = ss(x));
   remote.members = {}; ms.forEach(x => remote.members[x.id] = ss(x));
-  S.tx = tx; S.members = ms; S.iuran = meta.iuran || 0; S.name = meta.name || '';
+  remote.events = {}; evs.forEach(x => remote.events[x.id] = ss(x));
+  S.tx = tx; S.members = ms; S.events = evs; S.iuran = meta.iuran || 0; S.name = meta.name || '';
   S.cats = { in: toArr(meta.cats && meta.cats.in), out: toArr(meta.cats && meta.cats.out) };
   remote.meta = ss(metaOf()); loaded = true;
   if (!$('ov').classList.contains('hide')) dirty = true; else if (view === 'his' && $('hisBody')) hisBody(); else render();
@@ -314,7 +320,7 @@ function rHome() {
 }
 
 
-// ══════════ ANGGARAN (IURAN MEMBER) ══════════
+// ══════════ PAGUYUBAN: IURAN MEMBER & KEGIATAN ══════════
 // Status lunas dibaca dari transaksi kas masuk (lihat payOf),
 // jadi saldo kas selalu sinkron dan menghapus transaksi otomatis membatalkan status lunas.
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
@@ -322,12 +328,13 @@ const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || 
 // atau dari form transaksi biasa yang kolom "Diterima dari"-nya sama dengan nama anggota (bulan mengikuti tanggal transaksi).
 const payOf = (m, k) => S.tx.find(x => x.type === 'in' && x.cat === 'Iuran anggota' && (x.memberId ? (x.memberId === m.id && x.period === k) : (sameName(x.party, m.name) && x.date.startsWith(k))));
 function rAgr() {
+  if (agrTab === 'event') return rEvt();
   const mem = S.members.filter(m => m.since <= agr).sort((a, b) => a.name.localeCompare(b.name, 'id'));
   const rows = mem.map(m => ({ m, p: payOf(m, agr) }));
   const target = mem.reduce((a, m) => a + m.amt, 0), got = rows.reduce((a, r) => a + (r.p ? r.p.amt : 0), 0), n = rows.filter(r => r.p).length;
   const list = rows.filter(r => !agrF || (agrF === 'in' ? r.p : !r.p));
   const card = r => `<button class="mc ${r.p ? 'paid' : ''}" onclick="openPay(${r.m.id})"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${rp(r.m.amt)}</small><span class="bd">${r.p ? 'Lunas' : 'Belum bayar'}</span></button>`;
-  $('v-agr').innerHTML = `<div class="top"><h2>Anggaran iuran</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>
+  $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>${agrSeg()}
   <div class="mnav"><button onclick="agr=shiftM(agr,-1);rAgr()">‹</button><b>${monLabel(agr)}</b><button onclick="agr=shiftM(agr,1);rAgr()">›</button></div>
   <div class="hero" style="margin-top:10px"><small>Iuran terkumpul</small><div class="num" style="margin-bottom:0">${rp(got)}</div>
   <div class="pg"><i style="width:${target ? Math.min(100, got / target * 100) : 0}%"></i></div><small>${n} dari ${mem.length} anggota sudah bayar · target ${rp(target)}</small></div>
@@ -386,6 +393,68 @@ function delMember(id) {
   const m = S.members.find(x => x.id === id);
   if (!confirm('Hapus ' + m.name + ' dari daftar? Transaksi iuran yang sudah dicatat tetap ada di kas.')) return;
   S.members = S.members.filter(x => x.id !== id); save(); openMembers(); rAgr();
+}
+
+
+const agrSeg = () => `<div class="seg" style="margin:0 0 12px"><button class="${agrTab === 'iuran' ? 'on' : ''}" onclick="agrTab='iuran';rAgr()">Iuran</button><button class="${agrTab === 'event' ? 'on' : ''}" onclick="agrTab='event';rAgr()">Kegiatan</button></div>`;
+
+// ── Kegiatan: catatan event/acara paguyuban yang akan dilaksanakan ──
+const WD = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const dayDiff = d => Math.round((new Date(d + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5);
+const evUp = e => !e.done && e.date >= today();
+function evBadge(e) {
+  if (e.done) return '<span class="eb dn">Selesai</span>';
+  const n = dayDiff(e.date);
+  return n === 0 ? '<span class="eb now">Hari ini</span>' : n === 1 ? '<span class="eb">Besok</span>' : n > 1 ? `<span class="eb">${n} hari lagi</span>` : `<span class="eb dn">${-n} hari lalu</span>`;
+}
+function evCard(e) {
+  const [y, m, d] = e.date.split('-'), meta = [e.time, e.place].filter(Boolean).join(' · ');
+  return `<div class="ev ${evUp(e) ? '' : 'past'}" onclick="openEvt(${e.id})"><div class="ed"><b>${+d}</b><small>${MON[m - 1].slice(0, 3)}</small></div><div class="m"><b>${esc(e.name)}</b><small>${esc(meta || WD[new Date(e.date + 'T00:00:00').getDay()])}</small>${e.cost ? `<small>Perkiraan biaya ${rp(e.cost)}</small>` : ''}</div>${evBadge(e)}</div>`;
+}
+function rEvt() {
+  const up = S.events.filter(evUp).sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+  const dn = S.events.filter(e => !evUp(e)).sort((a, b) => b.date.localeCompare(a.date));
+  const list = evF === 'up' ? up : dn, cost = up.reduce((a, e) => a + (e.cost || 0), 0);
+  const empty = evF === 'up' ? (isAdmin ? 'Belum ada kegiatan yang akan datang. Tekan Tambah kegiatan untuk mencatat.' : 'Belum ada kegiatan yang dijadwalkan.') : 'Belum ada kegiatan yang selesai.';
+  $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openEvt()">Tambah kegiatan</button></div>${agrSeg()}
+  <div class="sum" style="margin:0"><div><small>Akan datang</small><b>${up.length} kegiatan</b></div><div><small>Perkiraan biaya</small><b>${rp(cost)}</b></div></div>
+  <div class="seg" style="margin-top:12px">${[['up', 'Akan datang (' + up.length + ')'], ['done', 'Selesai (' + dn.length + ')']].map(([k, l]) => `<button class="${evF === k ? 'on' : ''}" onclick="evF='${k}';rEvt()">${l}</button>`).join('')}</div>
+  ${list.length ? list.map(evCard).join('') : `<div class="empty">${empty}</div>`}`;
+}
+function viewEvt(id) {
+  const e = S.events.find(x => x.id === id); if (!e) return;
+  const row = (l, v) => v ? `<div class="tx" style="cursor:default"><div class="m"><small>${l}</small><b style="white-space:normal">${esc(v)}</b></div></div>` : '';
+  openOv(`<h3>Detail kegiatan<button onclick="closeOv()" aria-label="Tutup">×</button></h3><div class="card">${row('Kegiatan', e.name)}${row('Tanggal', WD[new Date(e.date + 'T00:00:00').getDay()] + ', ' + fmtDate(e.date))}${row('Waktu', e.time)}${row('Lokasi', e.place)}${row('Perkiraan biaya', e.cost ? rp(e.cost) : '')}${row('Status', e.done ? 'Selesai' : evUp(e) ? 'Akan datang' : 'Sudah lewat')}${row('Catatan', e.note)}</div>`);
+}
+function openEvt(id) {
+  if (!isAdmin) return id ? viewEvt(id) : null;
+  const e = S.events.find(x => x.id === id) || null; evId = e ? e.id : 0;
+  const v = e || { name: '', date: today(), time: '', place: '', cost: 0, note: '', done: false };
+  openOv(`<h3>${e ? 'Ubah kegiatan' : 'Tambah kegiatan'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <label>Nama kegiatan</label><input id="eName" value="${esc(v.name)}" placeholder="Contoh: Rapat bulanan, Bakti sosial">
+  <div class="g2"><div><label>Tanggal</label><input id="eDate" type="date" value="${v.date}"></div><div><label>Waktu (opsional)</label><input id="eTime" type="time" value="${esc(v.time)}"></div></div>
+  <label>Lokasi (opsional)</label><input id="ePlace" value="${esc(v.place)}" placeholder="Tempat pelaksanaan">
+  <label>Perkiraan biaya (Rp, opsional)</label><input id="eCost" inputmode="numeric" placeholder="0" value="${v.cost ? v.cost.toLocaleString('id-ID') : ''}" oninput="fmtAmt(this)">
+  <label>Catatan</label><textarea id="eNote" rows="3" placeholder="Agenda, penanggung jawab, perlengkapan…">${esc(v.note)}</textarea>
+  <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveEvt()">Simpan</button>${e ? `<button class="btn sec" onclick="doneEvt()">${e.done ? 'Batalkan tanda selesai' : 'Tandai selesai'}</button><button class="btn dng" onclick="delEvt()">Hapus kegiatan</button>` : ''}</div>`);
+}
+function saveEvt() {
+  if (!isAdmin) return;
+  const name = $('eName').value.trim(), date = $('eDate').value;
+  if (!name) return toast('Isi nama kegiatan.'); if (!date) return toast('Pilih tanggal kegiatan.');
+  const old = S.events.find(x => x.id === evId);
+  const e = { id: old ? old.id : Date.now(), name, date, time: $('eTime').value, place: $('ePlace').value.trim(), cost: parseInt(($('eCost').value || '').replace(/\D/g, '') || '0', 10), note: $('eNote').value.trim(), done: old ? !!old.done : false };
+  S.events = old ? S.events.map(x => x.id === e.id ? e : x) : S.events.concat(e);
+  save(); closeOv(); render(); toast('Kegiatan tersimpan');
+}
+function doneEvt() {
+  const e = S.events.find(x => x.id === evId); if (!isAdmin || !e) return;
+  S.events = S.events.map(x => x.id === e.id ? Object.assign({}, x, { done: !x.done }) : x);
+  save(); closeOv(); render(); toast(e.done ? 'Tanda selesai dibatalkan' : 'Ditandai selesai');
+}
+function delEvt() {
+  if (!isAdmin || !confirm('Hapus kegiatan ini?')) return;
+  S.events = S.events.filter(x => x.id !== evId); save(); closeOv(); render(); toast('Kegiatan dihapus');
 }
 
 // ══════════ LAPORAN ══════════
@@ -461,7 +530,7 @@ function showSg() {
   const box = $('sg'); if (!box) return;
   const q = $('fParty').value.trim().toLowerCase();
   const ms = S.members.slice().sort((a, b) => a.name.localeCompare(b.name, 'id')).filter(m => !q || m.name.toLowerCase().includes(q));
-  if (!ms.length) { if (!S.members.length && !q) { box.innerHTML = '<div class="hint">Belum ada anggota. Tambahkan di tab Anggaran, atau ketik nama bebas.</div>'; box.classList.remove('hide'); } else box.classList.add('hide'); return; }
+  if (!ms.length) { if (!S.members.length && !q) { box.innerHTML = '<div class="hint">Belum ada anggota. Tambahkan di tab Paguyuban, atau ketik nama bebas.</div>'; box.classList.remove('hide'); } else box.classList.add('hide'); return; }
   box.innerHTML = ms.map(m => `<div onmousedown="event.preventDefault()" onclick="pickSg(${m.id})"><b>${esc(m.name)}</b><small>${rp(m.amt)}</small></div>`).join('');
   box.classList.remove('hide');
 }
@@ -581,7 +650,7 @@ async function restore(k) {
 }
 function applyBackup(v) {
   if (!isAdmin) return;
-  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.iuran = v.iuran || 0; S.name = v.name || S.name;
+  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.iuran = v.iuran || 0; S.name = v.name || S.name;
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
   save(); closeOv(); render(); toast('Data dipulihkan');
 }
@@ -609,7 +678,7 @@ function enterApp() {
 }
 function showGate() {
   if (listening && db) { db.ref('kas').off(); listening = false; }
-  loaded = false; S.tx = []; S.members = []; dirty = false;
+  loaded = false; S.tx = []; S.members = []; S.events = []; dirty = false;
   ['app', 'nav'].forEach(i => $(i).classList.add('hide')); $('gate').classList.remove('hide'); gateView('choose');
 }
 function connect() {
