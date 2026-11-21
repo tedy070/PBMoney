@@ -130,6 +130,8 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .mc.cuti .av{background:color-mix(in srgb,var(--cu) 16%,transparent);color:var(--cu)}
 .mc.cuti .bd{background:color-mix(in srgb,var(--cu) 15%,transparent);color:var(--cu)}
 .mc.cuti b{color:var(--mut)}
+.seg select{flex:1;width:auto;min-width:0;border:0;background:transparent;box-shadow:none;border-radius:9px;padding:9px 22px 9px 10px;font-weight:600;color:var(--mut);text-align:center;text-align-last:center;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23586480' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.seg select.on{background-color:var(--sf);color:var(--ink);box-shadow:inset 0 1px 0 var(--hl),0 2px 6px -1px var(--sh2)}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -367,12 +369,12 @@ function rAgr() {
   const target = rows.reduce((a, r) => a + (r.st.s === 'cuti' ? 0 : r.m.amt), 0), got = rows.reduce((a, r) => a + (r.st.p ? r.st.p.amt : 0), 0);
   const list = rows.filter(r => !agrF || r.st.s === agrF);
   const card = r => `<button class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s === 'cuti' ? 'cuti' : ''}" onclick="openPay(${r.m.id})"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small><span class="bd">${ST[r.st.s]}</span></button>`;
-  const opts = [['', 'Semua status (' + mem.length + ')'], ['lunas', 'Lunas (' + cnt.lunas + ')'], ['belum', 'Belum bayar (' + cnt.belum + ')'], ['cuti', 'Cuti (' + cnt.cuti + ')']];
+  const opts = [['lunas', 'Lunas (' + cnt.lunas + ')'], ['belum', 'Belum bayar (' + cnt.belum + ')'], ['cuti', 'Cuti (' + cnt.cuti + ')']];
   $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>${agrSeg()}
   <div class="mnav"><button onclick="agr=shiftM(agr,-1);rAgr()">‹</button><b>${monLabel(agr)}</b><button onclick="agr=shiftM(agr,1);rAgr()">›</button></div>
   <div class="hero" style="margin-top:10px"><small>Iuran terkumpul</small><div class="num" style="margin-bottom:0">${rp(got)}</div>
   <div class="pg"><i style="width:${target ? Math.min(100, got / target * 100) : 0}%"></i></div><small>${cnt.lunas} dari ${active} anggota sudah bayar${cnt.cuti ? ' · ' + cnt.cuti + ' cuti' : ''} · target ${rp(target)}</small></div>
-  <label style="margin-top:14px">Tampilkan status</label><select id="stF" onchange="agrF=this.value;rAgr()">${opts.map(([k, l]) => `<option value="${k}" ${agrF === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+  <div class="seg" style="margin-top:12px"><button class="${agrF === '' ? 'on' : ''}" onclick="agrF='';rAgr()">Semua (${mem.length})</button><select id="stF" class="${agrF ? 'on' : ''}" aria-label="Filter status iuran" onchange="agrF=this.value;rAgr()"><option value="" disabled ${agrF ? '' : 'selected'}>Pilih status</option>${opts.map(([k, l]) => `<option value="${k}" ${agrF === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
   ${mem.length ? (list.length ? `<div class="mg">${list.map(card).join('')}</div>` : '<div class="empty">Tidak ada anggota dengan status ini.</div>') : '<div class="empty">Belum ada anggota di bulan ini. Tekan Kelola anggota untuk menambahkan.</div>'}`;
 }
 function openPay(id) {
