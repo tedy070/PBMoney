@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07080d">
+<meta name="theme-color" content="#eef1f7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="PBMoney">
 <title>PBMoney – Buku Kas Paguyuban Borez</title>
@@ -29,10 +29,8 @@
 })();
 </script>
 <style>
-:root{--bg:#eef1f7;--sf:#fff;--sf2:#e3e8f2;--ink:#0b1020;--mut:#586480;--ln:#d3d9e6;--pri:#1f55d6;--pt:#1f55d6;--onpri:#fff;--in:#0d63c0;--oin:#fff;--out:#c8202e;--ac:#c8202e;--r:14px}
+:root{--cu:#9a4608;--bg:#eef1f7;--sf:#fff;--sf2:#e3e8f2;--ink:#0b1020;--mut:#586480;--ln:#d3d9e6;--pri:#1f55d6;--pt:#1f55d6;--onpri:#fff;--in:#0d63c0;--oin:#fff;--out:#c8202e;--ac:#c8202e;--r:14px}
 /* Tema mengikuti banner Paguyuban: hitam kebiruan, biru api listrik, merah crimson, perak */
-body.dk{--bg:#07080d;--sf:#0f1320;--sf2:#181e30;--ink:#e8edf7;--mut:#8c97ae;--ln:#232b40;--pri:#2f6df0;--pt:#6ea8ff;--onpri:#fff;--in:#4aa3ff;--oin:#04101f;--out:#ff5a64;--ac:#ff4d58}
-body.dk{background:radial-gradient(120% 55% at 50% -12%,rgba(37,99,235,.22),transparent 62%),radial-gradient(90% 40% at 100% 112%,rgba(200,32,46,.14),transparent 60%),var(--bg);background-attachment:fixed}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{font:15px/1.45 'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-top:env(safe-area-inset-top)}
@@ -128,13 +126,16 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .ed{width:52px;flex:none;text-align:center;background:var(--sf2);border-radius:12px;padding:7px 0}.ed b{display:block;font-family:Sora;font-size:20px;line-height:1.1}.ed small{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
 .ev .m{flex:1;min-width:0}.ev .m b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev .m small{display:block;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eb{flex:none;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--sf2);color:var(--pt);white-space:nowrap}.eb.now{background:var(--in);color:var(--oin)}.eb.dn{color:var(--mut)}
+.mc.cuti{background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo))}
+.mc.cuti .av{background:color-mix(in srgb,var(--cu) 16%,transparent);color:var(--cu)}
+.mc.cuti .bd{background:color-mix(in srgb,var(--cu) 15%,transparent);color:var(--cu)}
+.mc.cuti b{color:var(--mut)}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
 
 /* ═══ ELEVASI 3D: kartu timbul, sorotan tepi atas, bayangan berlapis ═══ */
 :root{--sf-hi:#fff;--sf-lo:#f1f4fb;--hl:rgba(255,255,255,.95);--sh1:rgba(16,30,70,.10);--sh2:rgba(16,30,70,.15);--sh3:rgba(16,30,70,.17);--insh:rgba(16,30,70,.12)}
-body.dk{--sf-hi:#1b2338;--sf-lo:#0e1220;--hl:rgba(255,255,255,.09);--sh1:rgba(0,0,0,.55);--sh2:rgba(0,0,0,.62);--sh3:rgba(0,0,0,.55);--insh:rgba(0,0,0,.5)}
 .card,.set,.sum>div,.mc,.ev,.mnav{background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3)}
 .mc,.ev{transition:transform .16s ease,box-shadow .16s ease}
 @media(hover:hover){.mc:hover,.ev:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 var(--hl),0 2px 4px var(--sh1),0 14px 24px -8px var(--sh2),0 26px 40px -18px var(--sh3)}}
@@ -254,7 +255,7 @@ function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return tr
 const clean = o => JSON.parse(JSON.stringify(o));
 const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
-let S = { tx: [], members: [], events: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', dark: false, name: '' };
+let S = { tx: [], members: [], events: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
 let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, meta: '' };
 let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, saveT, locked = false;
 
@@ -273,18 +274,8 @@ const sorted = () => S.tx.slice().sort((a, b) => b.date.localeCompare(a.date) ||
 
 const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, iuran: S.iuran, cats: S.cats, name: S.name });
 const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats });
-function applyTheme() {
-  document.body.classList.toggle('dk', S.dark);
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = S.dark ? '#07080d' : '#eef1f7';
-}
-function savePrefs() { put(PREF, { dark: S.dark, pinHash: S.pinHash, th: 2 }); }
-// Tema gelap jadi bawaan (th:2). Pilihan terang/gelap yang disimpan setelah ini tetap dihormati.
-function loadPrefs() {
-  const p = store(PREF), old = store(KEY) || {};
-  S.pinHash = (p ? p.pinHash : old.pinHash) || '';
-  S.dark = p && p.th === 2 ? !!p.dark : true;
-  applyTheme();
-}
+function savePrefs() { put(PREF, { pinHash: S.pinHash }); }
+function loadPrefs() { const p = store(PREF), old = store(KEY) || {}; S.pinHash = (p ? p.pinHash : old.pinHash) || ''; }
 function loadLocal() {
   const v = store(KEY) || {};
   S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.iuran = v.iuran || 0; S.name = v.name || '';
@@ -359,32 +350,84 @@ const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || 
 // Lunas jika ada kas masuk kategori "Iuran anggota" untuk bulan itu, entah dari tombol Tandai lunas (memberId + period)
 // atau dari form transaksi biasa yang kolom "Diterima dari"-nya sama dengan nama anggota (bulan mengikuti tanggal transaksi).
 const payOf = (m, k) => S.tx.find(x => x.type === 'in' && x.cat === 'Iuran anggota' && (x.memberId ? (x.memberId === m.id && x.period === k) : (sameName(x.party, m.name) && x.date.startsWith(k))));
+// ── Status iuran per bulan: Lunas, Belum bayar, atau Cuti ──
+// Cuti = sementara tidak mengikuti iuran karena tidak bekerja. Disimpan sebagai periode per anggota (m.cutis).
+const cutiOf = (m, k) => toArr(m.cutis).find(c => c.from <= k && (!c.to || k <= c.to));
+function stOf(m, k) { const p = payOf(m, k); if (p) return { s: 'lunas', p }; const c = cutiOf(m, k); return c ? { s: 'cuti', c } : { s: 'belum' }; }
+const ST = { lunas: 'Lunas', belum: 'Belum bayar', cuti: 'Cuti' };
+const cutiInfo = c => esc('Cuti ' + monLabel(c.from) + ' – ' + (c.to ? monLabel(c.to) : 'sampai diaktifkan kembali')) + (c.why ? '<br>' + esc(c.why) : '');
+function setCutis(m, arr) { S.members = S.members.map(x => { if (x.id !== m.id) return x; const y = Object.assign({}, x); if (arr.length) y.cutis = arr; else delete y.cutis; return y; }); }
+
 function rAgr() {
   if (agrTab === 'event') return rEvt();
   const mem = S.members.filter(m => m.since <= agr).sort((a, b) => a.name.localeCompare(b.name, 'id'));
-  const rows = mem.map(m => ({ m, p: payOf(m, agr) }));
-  const target = mem.reduce((a, m) => a + m.amt, 0), got = rows.reduce((a, r) => a + (r.p ? r.p.amt : 0), 0), n = rows.filter(r => r.p).length;
-  const list = rows.filter(r => !agrF || (agrF === 'in' ? r.p : !r.p));
-  const card = r => `<button class="mc ${r.p ? 'paid' : ''}" onclick="openPay(${r.m.id})"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${rp(r.m.amt)}</small><span class="bd">${r.p ? 'Lunas' : 'Belum bayar'}</span></button>`;
+  const rows = mem.map(m => ({ m, st: stOf(m, agr) })), cnt = { lunas: 0, belum: 0, cuti: 0 };
+  rows.forEach(r => cnt[r.st.s]++);
+  const active = mem.length - cnt.cuti;
+  const target = rows.reduce((a, r) => a + (r.st.s === 'cuti' ? 0 : r.m.amt), 0), got = rows.reduce((a, r) => a + (r.st.p ? r.st.p.amt : 0), 0);
+  const list = rows.filter(r => !agrF || r.st.s === agrF);
+  const card = r => `<button class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s === 'cuti' ? 'cuti' : ''}" onclick="openPay(${r.m.id})"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small><span class="bd">${ST[r.st.s]}</span></button>`;
+  const opts = [['', 'Semua status (' + mem.length + ')'], ['lunas', 'Lunas (' + cnt.lunas + ')'], ['belum', 'Belum bayar (' + cnt.belum + ')'], ['cuti', 'Cuti (' + cnt.cuti + ')']];
   $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>${agrSeg()}
   <div class="mnav"><button onclick="agr=shiftM(agr,-1);rAgr()">‹</button><b>${monLabel(agr)}</b><button onclick="agr=shiftM(agr,1);rAgr()">›</button></div>
   <div class="hero" style="margin-top:10px"><small>Iuran terkumpul</small><div class="num" style="margin-bottom:0">${rp(got)}</div>
-  <div class="pg"><i style="width:${target ? Math.min(100, got / target * 100) : 0}%"></i></div><small>${n} dari ${mem.length} anggota sudah bayar · target ${rp(target)}</small></div>
-  <div class="seg" style="margin-top:12px">${[['', 'Semua (' + mem.length + ')'], ['in', 'Lunas (' + n + ')'], ['out', 'Belum (' + (mem.length - n) + ')']].map(([k, l]) => `<button class="${agrF === k ? 'on' : ''}" onclick="agrF='${k}';rAgr()">${l}</button>`).join('')}</div>
-  ${mem.length ? (list.length ? `<div class="mg">${list.map(card).join('')}</div>` : '<div class="empty">Tidak ada anggota di kelompok ini.</div>') : '<div class="empty">Belum ada anggota di bulan ini. Tekan Kelola anggota untuk menambahkan.</div>'}`;
+  <div class="pg"><i style="width:${target ? Math.min(100, got / target * 100) : 0}%"></i></div><small>${cnt.lunas} dari ${active} anggota sudah bayar${cnt.cuti ? ' · ' + cnt.cuti + ' cuti' : ''} · target ${rp(target)}</small></div>
+  <label style="margin-top:14px">Tampilkan status</label><select id="stF" onchange="agrF=this.value;rAgr()">${opts.map(([k, l]) => `<option value="${k}" ${agrF === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+  ${mem.length ? (list.length ? `<div class="mg">${list.map(card).join('')}</div>` : '<div class="empty">Tidak ada anggota dengan status ini.</div>') : '<div class="empty">Belum ada anggota di bulan ini. Tekan Kelola anggota untuk menambahkan.</div>'}`;
 }
 function openPay(id) {
   if (!isAdmin) return;
-  const m = S.members.find(x => x.id === id), p = payOf(m, agr);
-  if (p) return openOv(`<h3>${esc(m.name)}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  const m = S.members.find(x => x.id === id), st = stOf(m, agr), head = `<h3>${esc(m.name)}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>`;
+  if (st.s === 'lunas') { const p = st.p; return openOv(head + `
     <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:var(--in)">Lunas</b></div><div><small>Dibayar</small><b>${rp(p.amt)}</b></div></div>
     <p style="color:var(--mut)">${fmtDate(p.date)} · ${esc(p.method)}</p>
-    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn sec" onclick="closeOv();openTx(${p.id})">Lihat di transaksi</button><button class="btn dng" onclick="unpay(${m.id})">Batalkan pembayaran</button></div>`);
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn sec" onclick="closeOv();openTx(${p.id})">Lihat di transaksi</button><button class="btn dng" onclick="unpay(${m.id})">Batalkan pembayaran</button></div>`); }
+  if (st.s === 'cuti') return openOv(head + `
+    <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:var(--cu)">Cuti</b></div><div><small>Iuran bulan ini</small><b>Tidak ikut</b></div></div>
+    <p style="color:var(--mut)">Sementara tidak mengikuti iuran karena tidak bekerja.<br>${cutiInfo(st.c)}</p>
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="endCuti(${m.id})">Aktifkan kembali mulai ${monLabel(agr)}</button><button class="btn sec" onclick="openCuti(${m.id})">Ubah cuti</button><button class="btn sec" onclick="payForm(${m.id})">Catat pembayaran iuran</button></div>`);
+  payForm(id);
+}
+function payForm(id) {
+  const m = S.members.find(x => x.id === id);
   openOv(`<h3>${esc(m.name)}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
     <p style="color:var(--mut)">Catat iuran ${monLabel(agr)} sebagai kas masuk.</p>
     <label>Jumlah (Rp)</label><input id="pAmt" class="amt" inputmode="numeric" value="${m.amt.toLocaleString('id-ID')}" oninput="fmtAmt(this)">
     <div class="g2"><div><label>Tanggal bayar</label><input id="pDate" type="date" value="${today()}"></div><div><label>Metode</label><select id="pMeth">${METHODS.map(k => `<option>${k}</option>`).join('')}</select></div></div>
-    <button class="btn" style="margin-top:16px" onclick="pay(${m.id})">Tandai lunas</button>`);
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="pay(${m.id})">Tandai lunas</button><button class="btn sec" onclick="openCuti(${m.id})">Tandai cuti (tidak bekerja)</button></div>`);
+}
+function openCuti(id) {
+  if (!isAdmin) return;
+  const m = S.members.find(x => x.id === id), c = cutiOf(m, agr) || null, set = new Set();
+  for (let i = -12; i <= 24; i++) set.add(shiftM(agr, i)); if (c) { set.add(c.from); if (c.to) set.add(c.to); }
+  const ms = [...set].sort(), from = c ? c.from : agr;
+  openOv(`<h3>${c ? 'Ubah cuti' : 'Tandai cuti'} · ${esc(m.name)}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+    <p style="color:var(--mut)">Anggota yang cuti sementara tidak mengikuti iuran karena tidak bekerja, dan tidak dihitung sebagai belum bayar.</p>
+    <div class="g2"><div><label>Mulai cuti</label><select id="cFrom">${ms.map(k => `<option value="${k}" ${k === from ? 'selected' : ''}>${monLabel(k)}</option>`).join('')}</select></div>
+    <div><label>Sampai</label><select id="cTo"><option value="">Belum ditentukan</option>${ms.map(k => `<option value="${k}" ${c && c.to === k ? 'selected' : ''}>${monLabel(k)}</option>`).join('')}</select></div></div>
+    <label>Alasan (opsional)</label><input id="cWhy" value="${esc(c ? c.why : '')}" placeholder="Contoh: belum mendapat pekerjaan">
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveCuti(${m.id})">Simpan cuti</button>${c ? `<button class="btn dng" onclick="delCuti(${m.id})">Hapus cuti</button>` : ''}</div>`);
+}
+function saveCuti(id) {
+  if (!isAdmin) return;
+  const m = S.members.find(x => x.id === id), from = $('cFrom').value, to = $('cTo').value;
+  if (to && to < from) return toast('Bulan akhir tidak boleh sebelum bulan mulai.');
+  const old = cutiOf(m, agr), hi = to || '9999-12';
+  const keep = toArr(m.cutis).filter(c => c !== old && !(c.from <= hi && from <= (c.to || '9999-12')));
+  keep.push({ from, to, why: $('cWhy').value.trim() });
+  setCutis(m, keep.sort((a, b) => a.from.localeCompare(b.from))); save(); closeOv(); render(); toast(m.name + ' cuti');
+}
+function endCuti(id) {
+  if (!isAdmin) return;
+  const m = S.members.find(x => x.id === id), c = cutiOf(m, agr); if (!c) return;
+  const rest = toArr(m.cutis).filter(x => x !== c);
+  if (c.from < agr) rest.push(Object.assign({}, c, { to: shiftM(agr, -1) }));
+  setCutis(m, rest.sort((a, b) => a.from.localeCompare(b.from))); save(); closeOv(); render(); toast(m.name + ' aktif kembali');
+}
+function delCuti(id) {
+  if (!isAdmin) return;
+  const m = S.members.find(x => x.id === id), c = cutiOf(m, agr); if (!c) return;
+  setCutis(m, toArr(m.cutis).filter(x => x !== c)); save(); closeOv(); render(); toast('Cuti dihapus');
 }
 function pay(id) {
   const m = S.members.find(x => x.id === id), amt = parseInt(($('pAmt').value || '').replace(/\D/g, '') || '0', 10), date = $('pDate').value;
@@ -623,12 +666,10 @@ function rSet() {
     : `<p style="color:var(--mut);font-size:12.5px;margin:0 2px 14px">Data tersimpan di browser perangkat ini. Unduh cadangan JSON secara berkala agar data aman.</p><button class="btn dng" onclick="wipeAll()">Hapus semua data</button>`;
   $('v-set').innerHTML = `<div class="top"><h2>Pengaturan</h2></div>
   <div class="set"><div class="r"><b>Peran</b><span>${role}</span></div>${adm}
-    <button class="r" onclick="toggleDark()">Mode gelap<span>${S.dark ? 'Aktif' : 'Mati'}</span></button>
     <button class="r" onclick="setPin()">PIN kunci di perangkat ini<span>${S.pinHash ? 'Aktif' : 'Mati'}</span></button>
   </div>${bk}${foot}
   <p style="text-align:center;color:var(--mut);font-size:12px;margin-top:16px">PBMoney · Paguyuban Borez Money</p>`;
 }
-function toggleDark() { S.dark = !S.dark; applyTheme(); savePrefs(); rSet(); }
 async function setPin() {
   if (S.pinHash) { if (!confirm('Matikan PIN kunci?')) return; S.pinHash = ''; savePrefs(); rSet(); return toast('PIN dimatikan'); }
   const p = prompt('Buat PIN 4–6 angka'); if (p === null) return;
