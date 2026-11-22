@@ -85,12 +85,9 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .calc{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.calc button{padding:14px 0;border-radius:12px;background:var(--sf);font-family:Sora;font-weight:600}.calc button.o{background:var(--sf2);color:var(--pt)}
 .mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .mc{background:var(--sf);border-radius:var(--r);padding:14px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;border:1.5px solid transparent;min-width:0}
-.mc.paid{border-color:color-mix(in srgb,var(--in) 45%,transparent)}
 .mc .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:Sora;font-weight:600;background:var(--sf2);color:var(--mut);margin-bottom:6px}
-.mc.paid .av{background:var(--in);color:var(--oin)}
 .mc b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mc small{color:var(--mut)}
 .mc .bd{margin-top:8px;align-self:flex-start;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:color-mix(in srgb,var(--out) 14%,transparent);color:var(--out)}
-.mc.paid .bd{background:color-mix(in srgb,var(--in) 16%,transparent);color:var(--in)}
 .pg{height:10px;border-radius:8px;background:rgba(255,255,255,.22);overflow:hidden;margin:10px 0 6px}.pg i{display:block;height:100%;background:#fff;border-radius:8px}
 .sgw{position:relative}
 .sg{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--sf);border:1.5px solid var(--ln);border-radius:12px;max-height:210px;overflow:auto;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.18)}
@@ -126,12 +123,26 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .ed{width:52px;flex:none;text-align:center;background:var(--sf2);border-radius:12px;padding:7px 0}.ed b{display:block;font-family:Sora;font-size:20px;line-height:1.1}.ed small{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
 .ev .m{flex:1;min-width:0}.ev .m b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev .m small{display:block;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eb{flex:none;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--sf2);color:var(--pt);white-space:nowrap}.eb.now{background:var(--in);color:var(--oin)}.eb.dn{color:var(--mut)}
-.mc.cuti{background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo))}
-.mc.cuti .av{background:color-mix(in srgb,var(--cu) 16%,transparent);color:var(--cu)}
-.mc.cuti .bd{background:color-mix(in srgb,var(--cu) 15%,transparent);color:var(--cu)}
-.mc.cuti b{color:var(--mut)}
 .seg select{flex:1;width:auto;min-width:0;border:0;background:transparent;box-shadow:none;border-radius:9px;padding:9px 22px 9px 10px;font-weight:600;color:var(--mut);text-align:center;text-align-last:center;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23586480' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
 .seg select.on{background-color:var(--sf);color:var(--ink);box-shadow:inset 0 1px 0 var(--hl),0 2px 6px -1px var(--sh2)}
+.mc{position:relative;cursor:default}
+/* Warna kartu mengikuti status: hijau = Lunas, merah = Belum bayar, biru muda = Cuti */
+.mc.paid{--sc:#1f9d57;--t1:#eefbf3;--t2:#d5f3e1;--sb:#bdeed2;--sx:#0f5c2e}
+.mc.belum{--sc:#d63a3a;--t1:#fff0ef;--t2:#fbd9d8;--sb:#f9c4c3;--sx:#8f1d1d}
+.mc.cuti{--sc:#3b9ee6;--t1:#edf7ff;--t2:#d3eafc;--sb:#bde0fa;--sx:#0a5a8c}
+.mc.paid,.mc.belum,.mc.cuti{background:linear-gradient(135deg,var(--t1),var(--t2));border-color:var(--sc);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3)}
+.mc.paid .av,.mc.belum .av,.mc.cuti .av{background:var(--sc);color:#fff}
+.mc.paid b,.mc.belum b,.mc.cuti b{color:#0f1b2d}
+.mc.paid small,.mc.belum small,.mc.cuti small{color:#5a6680}
+.mc.paid .bd,.mc.belum .bd,.mc.cuti .bd{display:inline-flex;align-items:center;gap:6px;background:var(--sb);color:var(--sx)}
+.mc .bd::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
+.mc .dots{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.85);border:1px solid rgba(15,27,45,.10);color:#44506a;box-shadow:0 2px 6px -2px var(--sh2)}
+.mc .dots svg{width:18px;height:18px;fill:currentColor}.mc .dots:active{background:#fff;transform:scale(.94)}
+.pop{position:fixed;z-index:40;min-width:196px;background:var(--sf);border-radius:14px;padding:6px;border:1px solid rgba(15,27,45,.08);box-shadow:0 16px 40px rgba(16,32,74,.28),0 2px 6px rgba(16,32,74,.16)}
+.pi{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:10px;text-align:left;font-size:14px;color:#0f1b2d}
+.pi span{width:18px;text-align:center;font-weight:700;color:#44506a}.pi:active{background:var(--sf2)}
+.pi.gr,.pi.gr span{color:#15803d}.pi.bl,.pi.bl span{color:#0a5a8c}.pi.rd,.pi.rd span{color:#c62828}
+.ps{height:1px;background:var(--ln);margin:5px 8px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -139,9 +150,9 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 /* ═══ ELEVASI 3D: kartu timbul, sorotan tepi atas, bayangan berlapis ═══ */
 :root{--sf-hi:#fff;--sf-lo:#f1f4fb;--hl:rgba(255,255,255,.95);--sh1:rgba(16,30,70,.10);--sh2:rgba(16,30,70,.15);--sh3:rgba(16,30,70,.17);--insh:rgba(16,30,70,.12)}
 .card,.set,.sum>div,.mc,.ev,.mnav{background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3)}
-.mc,.ev{transition:transform .16s ease,box-shadow .16s ease}
-@media(hover:hover){.mc:hover,.ev:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 var(--hl),0 2px 4px var(--sh1),0 14px 24px -8px var(--sh2),0 26px 40px -18px var(--sh3)}}
-.mc:active,.ev:active{transform:translateY(1px) scale(.985);box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1)}
+.ev{transition:transform .16s ease,box-shadow .16s ease}
+@media(hover:hover){.ev:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 var(--hl),0 2px 4px var(--sh1),0 14px 24px -8px var(--sh2),0 26px 40px -18px var(--sh3)}}
+.ev:active{transform:translateY(1px) scale(.985);box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1)}
 .hero{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px rgba(0,0,0,.25),0 18px 34px -12px rgba(37,99,235,.6),0 30px 50px -24px rgba(7,11,28,.55)}
 .hero::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.18),rgba(255,255,255,0) 42%);pointer-events:none}
 .hero>*{position:relative}
@@ -259,7 +270,7 @@ const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
 let S = { tx: [], members: [], events: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
 let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, meta: '' };
-let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, saveT, locked = false;
+let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, popFor = 0, saveT, locked = false;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -324,6 +335,7 @@ function go(v) {
   render(); scrollTo(0, 0);
 }
 function render() {
+  closeMenu();
   if (cloud && !loaded) { $('v-' + view).innerHTML = '<div class="empty">Memuat data…</div>'; return; }
   ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet })[view]();
 }
@@ -368,7 +380,7 @@ function rAgr() {
   const active = mem.length - cnt.cuti;
   const target = rows.reduce((a, r) => a + (r.st.s === 'cuti' ? 0 : r.m.amt), 0), got = rows.reduce((a, r) => a + (r.st.p ? r.st.p.amt : 0), 0);
   const list = rows.filter(r => !agrF || r.st.s === agrF);
-  const card = r => `<button class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s === 'cuti' ? 'cuti' : ''}" onclick="openPay(${r.m.id})"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small><span class="bd">${ST[r.st.s]}</span></button>`;
+  const card = r => `<div class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s}"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small><span class="bd">${ST[r.st.s]}</span>${isAdmin ? `<button class="dots" onclick="openMenu(${r.m.id},event)" aria-label="Menu ${esc(r.m.name)}" aria-haspopup="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>` : ''}</div>`;
   const opts = [['lunas', 'Lunas (' + cnt.lunas + ')'], ['belum', 'Belum bayar (' + cnt.belum + ')'], ['cuti', 'Cuti (' + cnt.cuti + ')']];
   $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>${agrSeg()}
   <div class="mnav"><button onclick="agr=shiftM(agr,-1);rAgr()">‹</button><b>${monLabel(agr)}</b><button onclick="agr=shiftM(agr,1);rAgr()">›</button></div>
@@ -377,15 +389,37 @@ function rAgr() {
   <div class="seg" style="margin-top:12px"><button class="${agrF === '' ? 'on' : ''}" onclick="agrF='';rAgr()">Semua (${mem.length})</button><select id="stF" class="${agrF ? 'on' : ''}" aria-label="Filter status iuran" onchange="agrF=this.value;rAgr()"><option value="" disabled ${agrF ? '' : 'selected'}>Pilih status</option>${opts.map(([k, l]) => `<option value="${k}" ${agrF === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
   ${mem.length ? (list.length ? `<div class="mg">${list.map(card).join('')}</div>` : '<div class="empty">Tidak ada anggota dengan status ini.</div>') : '<div class="empty">Belum ada anggota di bulan ini. Tekan Kelola anggota untuk menambahkan.</div>'}`;
 }
+// Menu titik tiga (⋮) di kartu anggota: semua aksi lewat sini, kartu itu sendiri tidak bereaksi saat disentuh.
+function closeMenu() { const p = document.getElementById('pop'); if (p) p.remove(); popFor = 0; }
+function openMenu(id, e) {
+  if (e) e.stopPropagation();
+  if (!isAdmin) return;
+  if (popFor === id) return closeMenu();
+  closeMenu();
+  const m = S.members.find(x => x.id === id); if (!m) return;
+  const st = stOf(m, agr), it = (ic, tx, fn, cl) => `<button class="pi ${cl || ''}" onclick="closeMenu();${fn}"><span>${ic}</span>${tx}</button>`;
+  const items = st.s === 'lunas' ? [it('↗', 'Lihat transaksi', `openTx(${st.p.id})`), it('↺', 'Batalkan pembayaran', `unpay(${id})`, 'rd')]
+    : st.s === 'cuti' ? [it('↺', 'Aktifkan kembali', `endCuti(${id})`, 'bl'), it('☾', 'Ubah cuti', `openCuti(${id})`), it('✓', 'Catat pembayaran', `payForm(${id})`, 'gr')]
+    : [it('✓', 'Tandai lunas', `payForm(${id})`, 'gr'), it('☾', 'Tandai cuti', `openCuti(${id})`, 'bl')];
+  items.push('<div class="ps"></div>', it('✎', 'Ubah data anggota', `openMembers(${id})`), it('✕', 'Hapus anggota', `delMember(${id})`, 'rd'));
+  const p = document.createElement('div'); p.id = 'pop'; p.className = 'pop'; p.setAttribute('role', 'menu'); p.innerHTML = items.join(''); document.body.appendChild(p);
+  const r = e.currentTarget.getBoundingClientRect(), h = p.offsetHeight, w = p.offsetWidth;
+  let top = r.bottom + 6; if (top + h > innerHeight - 78) top = Math.max(8, r.top - h - 6);
+  p.style.top = top + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
+  popFor = id;
+}
+document.addEventListener('pointerdown', e => { if (popFor && !e.target.closest('#pop,.dots')) closeMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+window.addEventListener('scroll', closeMenu, true); window.addEventListener('resize', closeMenu);
 function openPay(id) {
   if (!isAdmin) return;
   const m = S.members.find(x => x.id === id), st = stOf(m, agr), head = `<h3>${esc(m.name)}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>`;
   if (st.s === 'lunas') { const p = st.p; return openOv(head + `
-    <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:var(--in)">Lunas</b></div><div><small>Dibayar</small><b>${rp(p.amt)}</b></div></div>
+    <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:#15803d">Lunas</b></div><div><small>Dibayar</small><b>${rp(p.amt)}</b></div></div>
     <p style="color:var(--mut)">${fmtDate(p.date)} · ${esc(p.method)}</p>
     <div style="display:grid;gap:8px;margin-top:16px"><button class="btn sec" onclick="closeOv();openTx(${p.id})">Lihat di transaksi</button><button class="btn dng" onclick="unpay(${m.id})">Batalkan pembayaran</button></div>`); }
   if (st.s === 'cuti') return openOv(head + `
-    <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:var(--cu)">Cuti</b></div><div><small>Iuran bulan ini</small><b>Tidak ikut</b></div></div>
+    <div class="sum" style="margin:0 0 12px"><div><small>Status ${monLabel(agr)}</small><b style="color:#0a5a8c">Cuti</b></div><div><small>Iuran bulan ini</small><b>Tidak ikut</b></div></div>
     <p style="color:var(--mut)">Sementara tidak mengikuti iuran karena tidak bekerja.<br>${cutiInfo(st.c)}</p>
     <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="endCuti(${m.id})">Aktifkan kembali mulai ${monLabel(agr)}</button><button class="btn sec" onclick="openCuti(${m.id})">Ubah cuti</button><button class="btn sec" onclick="payForm(${m.id})">Catat pembayaran iuran</button></div>`);
   payForm(id);
@@ -469,7 +503,7 @@ function saveMember() {
 function delMember(id) {
   const m = S.members.find(x => x.id === id);
   if (!confirm('Hapus ' + m.name + ' dari daftar? Transaksi iuran yang sudah dicatat tetap ada di kas.')) return;
-  S.members = S.members.filter(x => x.id !== id); save(); openMembers(); rAgr();
+  const was = !$('ov').classList.contains('hide'); S.members = S.members.filter(x => x.id !== id); save(); if (was) openMembers(); rAgr(); toast('Anggota dihapus');
 }
 
 
