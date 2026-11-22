@@ -154,6 +154,13 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .an>svg.chev{width:18px;height:18px;flex:none;color:#8a96b0;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .set .r .cnt{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 8px;border-radius:12px;background:var(--pri);color:#fff;font-weight:700;font-size:12px;font-style:normal}
 .set .r .rt{display:flex;align-items:center;gap:8px}
+.rt p{margin:0 0 8px}.rt p:last-child{margin-bottom:0}.rt h3{font-size:16px;margin:12px 0 6px}.rt h3:first-child{margin-top:0}
+.rt ul,.rt ol{margin:4px 0 8px 22px}.rt li{margin:2px 0}.rt a{color:var(--pt);text-decoration:underline}
+.rtb{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1.5px solid var(--ln);border-bottom:0;border-radius:12px 12px 0 0;background:var(--sf2)}
+.rtb button{min-width:38px;height:38px;padding:0 9px;border-radius:10px;background:var(--sf);color:var(--ink);font-size:14px;box-shadow:inset 0 1px 0 var(--hl),0 2px 5px -2px var(--sh2)}
+.rtb button.on{background:var(--pri);color:#fff}
+.rte{min-height:170px;max-height:44vh;overflow:auto;padding:12px;border:1.5px solid var(--ln);border-radius:0 0 12px 12px;background:var(--sf);outline:none;line-height:1.6;word-break:break-word;box-shadow:inset 0 1px 3px var(--insh)}
+.rte:focus{border-color:var(--pri)}.rte:empty:before{content:attr(data-ph);color:#8a96b0;pointer-events:none}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -593,28 +600,93 @@ function rAnn() {
   $('v-ann').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Pengumuman</h2></div><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openAnnForm()">+ Buat baru</button></div>
   ${l.length ? l.map(card).join('') : `<div class="empty">${isAdmin ? 'Belum ada pengumuman. Tekan Buat baru untuk menulis.' : 'Belum ada pengumuman.'}</div>`}`;
 }
+// ── Format teks: isi disimpan sebagai HTML yang dibersihkan lewat daftar putih tag (aman dari skrip) ──
+const TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', P: 'p', DIV: 'p', H1: 'h3', H2: 'h3', H3: 'h3', H4: 'h3', UL: 'ul', OL: 'ol', LI: 'li', A: 'a', BR: 'br' };
+const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'NOSCRIPT', 'TEMPLATE', 'SVG', 'MATH', 'FORM', 'INPUT', 'BUTTON', 'TEXTAREA', 'SELECT', 'LINK', 'META', 'TITLE', 'HEAD']);
+function cleanHtml(html) {
+  const doc = new DOMParser().parseFromString('<body>' + (html || '') + '</body>', 'text/html');
+  const walk = n => {
+    let o = '';
+    n.childNodes.forEach(c => {
+      if (c.nodeType === 3) o += esc(c.nodeValue);
+      else if (c.nodeType === 1 && !DROP.has(c.tagName.toUpperCase())) {
+        const tag = TAGS[c.tagName.toUpperCase()], inner = walk(c);
+        if (!tag) o += inner;
+        else if (tag === 'br') o += '<br>';
+        else if (tag === 'a') { const h = (c.getAttribute('href') || '').trim(); o += /^https?:\/\//i.test(h) ? `<a href="${esc(h)}" target="_blank" rel="noopener noreferrer">${inner}</a>` : inner; }
+        else o += `<${tag}>${inner}</${tag}>`;
+      }
+    });
+    return o;
+  };
+  return walk(doc.body).replace(/^(?:<p>(?:<br>)?<\/p>)+|(?:<p>(?:<br>)?<\/p>)+$/g, '');
+}
+function htmlText(html) {
+  const doc = new DOMParser().parseFromString('<body>' + html.replace(/<br>|<\/p>|<\/li>|<\/h3>/g, '\n') + '</body>', 'text/html');
+  return doc.body.textContent.replace(/\n{3,}/g, '\n\n').trim();
+}
+const annHtml = a => a.html ? cleanHtml(a.html) : '<p style="white-space:pre-wrap">' + esc(a.body) + '</p>';
+const TB = [['bold', '<b>B</b>', 'Tebal'], ['italic', '<i>I</i>', 'Miring'], ['underline', '<u>U</u>', 'Garis bawah'], ['strikeThrough', '<s>S</s>', 'Coret'], ['h', 'Judul', 'Judul kecil'], ['insertUnorderedList', '•', 'Daftar poin'], ['insertOrderedList', '1.', 'Daftar nomor'], ['link', 'Tautan', 'Sisipkan tautan'], ['clear', 'Bersihkan', 'Hapus format']];
+function tbState() {
+  const tb = $('aTb'); if (!tb) return;
+  try {
+    tb.querySelectorAll('[data-c]').forEach(b => {
+      const c = b.dataset.c; let on = false;
+      if (['bold', 'italic', 'underline', 'strikeThrough', 'insertUnorderedList', 'insertOrderedList'].includes(c)) on = document.queryCommandState(c);
+      else if (c === 'h') on = (document.queryCommandValue('formatBlock') || '').toLowerCase() === 'h3';
+      b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', !!on);
+    });
+  } catch (e) {}
+}
+document.addEventListener('selectionchange', tbState);
+function fmt(c) {
+  const ed = $('aBody'); if (!ed) return;
+  if (!document.execCommand) return toast('Format teks tidak didukung di browser ini.');
+  ed.focus();
+  try {
+    if (c === 'h') document.execCommand('formatBlock', false, (document.queryCommandValue('formatBlock') || '').toLowerCase() === 'h3' ? 'p' : 'h3');
+    else if (c === 'link') {
+      const sel = getSelection(), rg = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+      const u = (prompt('Alamat tautan (diawali https://)', 'https://') || '').trim();
+      if (rg) { sel.removeAllRanges(); sel.addRange(rg); }
+      if (/^https?:\/\/\S+$/i.test(u)) document.execCommand('createLink', false, u); else if (u) toast('Tautan harus diawali http:// atau https://');
+    } else if (c === 'clear') { document.execCommand('removeFormat'); document.execCommand('unlink'); document.execCommand('formatBlock', false, 'p'); }
+    else document.execCommand(c);
+  } catch (e) { toast('Format teks gagal diterapkan.'); }
+  tbState();
+}
+function annPaste(e) {
+  e.preventDefault();
+  const tx = (e.clipboardData || window.clipboardData).getData('text/plain');
+  try { document.execCommand('insertText', false, tx); } catch (x) {}
+}
 function openAnn(id) {
   const a = S.pengumuman.find(x => x.id === id); if (!a) return;
   openOv(`<h3 style="align-items:flex-start;gap:10px"><span style="word-break:break-word">${esc(a.title)}</span><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <div style="color:var(--mut);font-size:13px;display:flex;align-items:center;gap:6px;margin:-4px 0 12px">${ICO_CAL}Dibuat ${fmtDate(a.date)}</div>
-  <div class="card" style="padding:14px;white-space:pre-wrap;word-break:break-word;line-height:1.65">${esc(a.body)}</div>
+  <div class="card rt" style="padding:14px;word-break:break-word;line-height:1.65">${annHtml(a)}</div>
   ${isAdmin ? `<div class="g2" style="margin-top:16px"><button class="btn sec" onclick="openAnnForm(${a.id})">Ubah</button><button class="btn dng" onclick="delAnn(${a.id})">Hapus</button></div>` : ''}`);
 }
 function openAnnForm(id) {
   if (!isAdmin) return;
   const a = S.pengumuman.find(x => x.id === id) || null; annId = a ? a.id : 0;
+  const init = a ? (a.html ? cleanHtml(a.html) : (a.body || '').split('\n').map(l => `<p>${esc(l) || '<br>'}</p>`).join('')) : '';
   openOv(`<h3>${a ? 'Ubah pengumuman' : 'Buat pengumuman'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <label>Judul</label><input id="aTitle" maxlength="100" value="${esc(a ? a.title : '')}" placeholder="Contoh: Rapat bulanan Desember">
-  <label>Isi pengumuman</label><textarea id="aBody" rows="9" maxlength="4000" placeholder="Tulis isi pengumuman di sini…">${esc(a ? a.body : '')}</textarea>
+  <label>Isi pengumuman</label>
+  <div class="rtb" id="aTb" role="toolbar" aria-label="Format teks">${TB.map(([c, l, tt]) => `<button type="button" data-c="${c}" title="${tt}" aria-label="${tt}" aria-pressed="false" onmousedown="event.preventDefault()" onclick="fmt('${c}')">${l}</button>`).join('')}</div>
+  <div id="aBody" class="rte rt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Isi pengumuman" data-ph="Tulis isi pengumuman di sini…" onpaste="annPaste(event)" oninput="tbState()">${init}</div>
   <p style="color:var(--mut);font-size:12.5px;margin:10px 2px 0">${ICO_CAL.replace('class="ic"', 'class="ic" style="vertical-align:-2px;margin-right:6px"')}Tanggal dibuat ${a ? 'tetap' : 'terisi otomatis'}: ${fmtDate(a ? a.date : today())}</p>
   <button class="btn" style="margin-top:14px" onclick="saveAnn()">Simpan</button>`);
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) {}
 }
 function saveAnn() {
   if (!isAdmin) return;
-  const title = $('aTitle').value.trim(), body = $('aBody').value.trim();
+  const title = $('aTitle').value.trim(), html = cleanHtml($('aBody').innerHTML), body = htmlText(html);
   if (!title) return toast('Isi judul pengumuman.'); if (!body) return toast('Tulis isi pengumuman.');
+  if (body.length > 4000 || html.length > 12000) return toast('Isi pengumuman terlalu panjang.');
   const old = S.pengumuman.find(x => x.id === annId);
-  const a = { id: old ? old.id : Date.now(), title, body, date: old ? old.date : today() };
+  const a = { id: old ? old.id : Date.now(), title, body, html, date: old ? old.date : today() };
   S.pengumuman = old ? S.pengumuman.map(x => x.id === a.id ? a : x) : S.pengumuman.concat(a);
   save(); closeOv(); render(); toast('Pengumuman tersimpan');
 }
