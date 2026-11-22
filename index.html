@@ -164,6 +164,8 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .rtb button.on{background:var(--pri);color:#fff}
 .rte{font-size:16px;min-height:170px;max-height:44vh;overflow:auto;padding:12px;border:1.5px solid var(--ln);border-radius:0 0 12px 12px;background:var(--sf);outline:none;line-height:1.6;word-break:break-word;box-shadow:inset 0 1px 3px var(--insh)}
 .rte:focus{border-color:var(--pri)}.rte:empty:before{content:attr(data-ph);color:#8a96b0;pointer-events:none}
+#mAmt[readonly]{background:var(--sf2);color:var(--mut);cursor:not-allowed}
+.mc small.ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -403,7 +405,7 @@ function rAgr() {
   const active = mem.length - cnt.cuti;
   const target = rows.reduce((a, r) => a + (r.st.s === 'cuti' ? 0 : r.m.amt), 0), got = rows.reduce((a, r) => a + (r.st.p ? r.st.p.amt : 0), 0);
   const list = rows.filter(r => !agrF || r.st.s === agrF);
-  const card = r => `<div class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s}"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small><span class="bd">${ST[r.st.s]}</span>${isAdmin ? `<button class="dots" onclick="openMenu(${r.m.id},event)" aria-label="Menu ${esc(r.m.name)}" aria-haspopup="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>` : ''}</div>`;
+  const card = r => `<div class="mc ${r.st.s === 'lunas' ? 'paid' : r.st.s}"><div class="av">${esc(r.m.name.trim().charAt(0).toUpperCase())}</div><b>${esc(r.m.name)}</b><small>${r.st.s === 'cuti' ? 'Tidak ikut iuran' : rp(r.m.amt)}</small>${KERJA[r.m.kerja] ? `<small class="ct">${KERJA[r.m.kerja].s}</small>` : ''}<span class="bd">${ST[r.st.s]}</span>${isAdmin ? `<button class="dots" onclick="openMenu(${r.m.id},event)" aria-label="Menu ${esc(r.m.name)}" aria-haspopup="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>` : ''}</div>`;
   const opts = [['lunas', 'Lunas (' + cnt.lunas + ')'], ['belum', 'Belum bayar (' + cnt.belum + ')'], ['cuti', 'Cuti (' + cnt.cuti + ')']];
   $('v-agr').innerHTML = `<div class="top"><h2>Paguyuban</h2><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openMembers()">Kelola anggota</button></div>${agrSeg()}
   <div class="mnav"><button onclick="agr=shiftM(agr,-1);rAgr()">‹</button><b>${monLabel(agr)}</b><button onclick="agr=shiftM(agr,1);rAgr()">›</button></div>
@@ -500,28 +502,58 @@ function unpay(id) {
   if (!p || !confirm('Batalkan pembayaran ' + m.name + '? Transaksi kas masuknya ikut dihapus.')) return;
   S.tx = S.tx.filter(x => x.id !== p.id); save(); closeOv(); rAgr(); toast('Pembayaran dibatalkan');
 }
+// Kategori kerja anggota: menentukan nominal iuran per bulan. Ubah angka di sini bila ketentuan iuran berubah.
+const KERJA = {
+  kampung: { l: 'Kerja di Kampung Halaman', s: 'Kampung halaman', amt: 30000, fixed: true },
+  dn: { l: 'Kerja di Perantauan (Dalam Negeri)', s: 'Perantauan dalam negeri', amt: 50000, fixed: true },
+  ln: { l: 'Kerja di Perantauan (Luar Negeri: Jepang, Korea)', s: 'Luar negeri (Jepang/Korea)', amt: 200000, fixed: true },
+  lain: { l: 'Kerja di Perantauan selain Jepang & Korea', s: 'Perantauan selain Jepang/Korea', amt: 50000, fixed: false }
+};
 function openMembers(id) {
   if (!isAdmin) return;
   const e = S.members.find(m => m.id === id) || null; mEdit = e ? e.id : 0;
-  const v = e ? e.amt : S.iuran;
-  const rows = S.members.slice().sort((a, b) => a.name.localeCompare(b.name, 'id')).map(m => `<div class="tx" style="cursor:default"><div class="m"><b>${esc(m.name)}</b><small>${rp(m.amt)} per bulan · sejak ${monLabel(m.since)}</small></div><button class="a" style="color:var(--pt)" onclick="openMembers(${m.id})">Ubah</button><button class="a out" onclick="delMember(${m.id})">Hapus</button></div>`);
+  const k = e && KERJA[e.kerja] ? e.kerja : '';
+  const rows = S.members.slice().sort((a, b) => a.name.localeCompare(b.name, 'id')).map(m => `<div class="tx" style="cursor:default"><div class="m"><b>${esc(m.name)}</b><small>${rp(m.amt)} per bulan${KERJA[m.kerja] ? ' · ' + KERJA[m.kerja].s : ''} · sejak ${monLabel(m.since)}</small></div><button class="a" style="color:var(--pt)" onclick="openMembers(${m.id})">Ubah</button><button class="a out" onclick="delMember(${m.id})">Hapus</button></div>`);
   openOv(`<h3>${e ? 'Ubah anggota' : 'Tambah anggota'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
     <label>Nama anggota</label><input id="mName" value="${esc(e ? e.name : '')}" placeholder="Nama lengkap">
-    <label>Iuran per bulan (Rp)</label><input id="mAmt" inputmode="numeric" value="${v ? v.toLocaleString('id-ID') : ''}" placeholder="0" oninput="fmtAmt(this)">
+    <label>Kategori kerja</label><select id="mKerja" onchange="kerjaChange()"><option value="" ${e ? '' : 'disabled'} ${k ? '' : 'selected'}>Pilih kategori kerja</option>${Object.entries(KERJA).map(([key, c]) => `<option value="${key}" ${k === key ? 'selected' : ''}>${esc(c.l)} · ${rp(c.amt)}${c.fixed ? '' : ' (boleh lebih)'}</option>`).join('')}</select>
+    <label>Iuran per bulan (Rp)</label><input id="mAmt" inputmode="numeric" placeholder="0" oninput="fmtAmt(this)">
+    <p id="mHint" style="color:var(--mut);font-size:12.5px;margin:6px 2px 0"></p>
     <button class="btn" style="margin:14px 0 18px" onclick="saveMember()">${e ? 'Simpan perubahan' : 'Tambah anggota'}</button>
     <div class="card">${rows.length ? rows.join('') : '<div class="empty">Belum ada anggota.</div>'}</div>`);
+  kerjaChange(true, e ? e.amt : 0);
+}
+// Memilih kategori mengisi nominal otomatis. Tiga kategori bernominal tetap (kolom terkunci); "selain Jepang & Korea" minimal Rp 50.000 dan boleh lebih.
+function kerjaChange(init, cur) {
+  const sel = $('mKerja'); if (!sel) return;
+  const c = KERJA[sel.value], a = $('mAmt'), h = $('mHint'), fmt = n => n.toLocaleString('id-ID');
+  if (!c) {
+    a.readOnly = !(cur > 0) && init === true ? true : false;
+    if (init === true) a.value = cur > 0 ? fmt(cur) : '';
+    a.placeholder = a.readOnly ? 'Otomatis sesuai kategori' : '0';
+    h.textContent = a.readOnly ? 'Pilih kategori kerja, nominal iuran terisi otomatis.' : 'Anggota tanpa kategori: nominal diisi manual. Pilih kategori untuk nominal otomatis.';
+  } else if (c.fixed) {
+    a.readOnly = true; a.value = fmt(c.amt); h.textContent = 'Nominal tetap ' + rp(c.amt) + ' per bulan.';
+  } else {
+    a.readOnly = false; a.value = fmt(init === true && cur >= c.amt ? cur : c.amt); h.textContent = 'Minimal ' + rp(c.amt) + ', boleh lebih.';
+  }
 }
 function saveMember() {
-  const name = $('mName').value.trim(), amt = parseInt(($('mAmt').value || '').replace(/\D/g, '') || '0', 10);
-  if (!name) return toast('Isi nama anggota.'); if (!amt) return toast('Isi nominal iuran.');
+  const name = $('mName').value.trim(), k = $('mKerja').value, c = KERJA[k];
+  const amt = c && c.fixed ? c.amt : parseInt(($('mAmt').value || '').replace(/\D/g, '') || '0', 10);
+  if (!name) return toast('Isi nama anggota.');
+  if (!mEdit && !c) return toast('Pilih kategori kerja.');
+  if (!amt) return toast('Isi nominal iuran.');
+  if (c && !c.fixed && amt < c.amt) return toast('Minimal ' + rp(c.amt) + ' untuk kategori ini.');
   if (S.members.some(m => m.id !== mEdit && m.name.toLowerCase() === name.toLowerCase())) return toast('Nama sudah ada.');
+  const setK = m => { const y = Object.assign({}, m, { name, amt }); if (c) y.kerja = k; else delete y.kerja; return y; };
   if (mEdit) {
     const old = S.members.find(m => m.id === mEdit);
     if (old && !sameName(old.name, name)) S.tx.forEach(x => { if (x.type === 'in' && !x.memberId && sameName(x.party, old.name)) x.party = name; });
-    S.members = S.members.map(m => m.id === mEdit ? Object.assign({}, m, { name, amt }) : m);
+    S.members = S.members.map(m => m.id === mEdit ? setK(m) : m);
   }
-  else S.members.push({ id: Date.now(), name, amt, since: agr });
-  S.iuran = amt; save(); openMembers(); rAgr(); toast('Tersimpan');
+  else S.members.push(setK({ id: Date.now(), since: agr }));
+  save(); openMembers(); rAgr(); toast('Tersimpan');
 }
 function delMember(id) {
   const m = S.members.find(x => x.id === id);
