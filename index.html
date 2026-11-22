@@ -143,6 +143,17 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .pi span{width:18px;text-align:center;font-weight:700;color:#44506a}.pi:active{background:var(--sf2)}
 .pi.gr,.pi.gr span{color:#15803d}.pi.bl,.pi.bl span{color:#0a5a8c}.pi.rd,.pi.rd span{color:#c62828}
 .ps{height:1px;background:var(--ln);margin:5px 8px}
+.an{display:flex;gap:12px;align-items:center;padding:14px 12px;margin-top:10px;border-radius:18px;cursor:pointer;background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3);transition:transform .16s ease,box-shadow .16s ease}
+.an:active{transform:translateY(1px) scale(.985)}
+@media(hover:hover){.an:hover{transform:translateY(-3px)}}
+.an .ai{width:42px;height:42px;border-radius:12px;flex:none;display:grid;place-items:center;background:linear-gradient(180deg,color-mix(in srgb,var(--pri) 78%,#fff),var(--pri));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 10px -3px color-mix(in srgb,var(--pri) 70%,transparent)}
+.an .ai svg{width:24px;height:24px}
+.an .m{flex:1;min-width:0}.an .m b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an .m small{display:flex;align-items:center;gap:6px;color:var(--mut);margin-top:2px}
+.ic{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.an>svg.chev{width:18px;height:18px;flex:none;color:#8a96b0;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.set .r .cnt{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 8px;border-radius:12px;background:var(--pri);color:#fff;font-weight:700;font-size:12px;font-style:normal}
+.set .r .rt{display:flex;align-items:center;gap:8px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -220,6 +231,7 @@ nav .add:active{transform:translateY(-10px) scale(.94)}
   <section id="v-rep" class="hide"></section>
   <section id="v-his" class="hide"></section>
   <section id="v-set" class="hide"></section>
+  <section id="v-ann" class="hide"></section>
 </div>
 
 <nav id="nav" class="hide"><div>
@@ -268,8 +280,8 @@ function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return tr
 const clean = o => JSON.parse(JSON.stringify(o));
 const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
-let S = { tx: [], members: [], events: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
-let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, meta: '' };
+let S = { tx: [], members: [], events: [], pengumuman: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
+let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, pengumuman: {}, meta: '' };
 let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, popFor = 0, saveT, locked = false;
 
 const $ = id => document.getElementById(id);
@@ -285,13 +297,13 @@ function cats(t) { return (t === 'in' ? CAT_IN : CAT_OUT).concat(S.cats[t] || []
 function sum(list, t) { return list.filter(x => x.type === t).reduce((a, x) => a + x.amt, 0); }
 const sorted = () => S.tx.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, iuran: S.iuran, cats: S.cats, name: S.name });
+const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, pengumuman: S.pengumuman, iuran: S.iuran, cats: S.cats, name: S.name });
 const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats });
 function savePrefs() { put(PREF, { pinHash: S.pinHash }); }
 function loadPrefs() { const p = store(PREF), old = store(KEY) || {}; S.pinHash = (p ? p.pinHash : old.pinHash) || ''; }
 function loadLocal() {
   const v = store(KEY) || {};
-  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.iuran = v.iuran || 0; S.name = v.name || '';
+  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.iuran = v.iuran || 0; S.name = v.name || '';
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
 }
 // Simpan: mode perangkat -> localStorage; mode cloud -> hanya selisih per item ke RTDB (aman bila dua admin mengedit bersamaan).
@@ -304,16 +316,17 @@ function save() {
     list.forEach(x => { const k = String(x.id), c = clean(x); seen[k] = 1; if (remote[n][k] !== ss(c)) up[n + '/' + k] = c; });
     Object.keys(remote[n]).forEach(k => { if (!seen[k]) up[n + '/' + k] = null; });
   };
-  sync('tx', S.tx); sync('members', S.members); sync('events', S.events);
+  sync('tx', S.tx); sync('members', S.members); sync('events', S.events); sync('pengumuman', S.pengumuman);
   const m = metaOf(); if (remote.meta !== ss(m)) up.meta = m;
   if (Object.keys(up).length) db.ref('kas').update(up).catch(e => toast('Gagal menyimpan: ' + e.message));
 }
 function applyRemote(v) {
-  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), meta = v.meta || {};
+  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), pgs = Object.values(v.pengumuman || {}), meta = v.meta || {};
   remote.tx = {}; tx.forEach(x => remote.tx[x.id] = ss(x));
   remote.members = {}; ms.forEach(x => remote.members[x.id] = ss(x));
   remote.events = {}; evs.forEach(x => remote.events[x.id] = ss(x));
-  S.tx = tx; S.members = ms; S.events = evs; S.iuran = meta.iuran || 0; S.name = meta.name || '';
+  remote.pengumuman = {}; pgs.forEach(x => remote.pengumuman[x.id] = ss(x));
+  S.tx = tx; S.members = ms; S.events = evs; S.pengumuman = pgs; S.iuran = meta.iuran || 0; S.name = meta.name || '';
   S.cats = { in: toArr(meta.cats && meta.cats.in), out: toArr(meta.cats && meta.cats.out) };
   remote.meta = ss(metaOf()); loaded = true;
   if (!$('ov').classList.contains('hide')) dirty = true; else if (view === 'his' && $('hisBody')) hisBody(); else render();
@@ -330,14 +343,14 @@ async function tryUnlock() {
 document.querySelectorAll('nav [data-v]').forEach(b => b.onclick = () => go(b.dataset.v));
 function go(v) {
   view = v;
-  ['home', 'agr', 'rep', 'his', 'set'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
-  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  ['home', 'agr', 'rep', 'his', 'set', 'ann'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
+  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === (v === 'ann' ? 'set' : v)));
   render(); scrollTo(0, 0);
 }
 function render() {
   closeMenu();
   if (cloud && !loaded) { $('v-' + view).innerHTML = '<div class="empty">Memuat data…</div>'; return; }
-  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet })[view]();
+  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet, ann: rAnn })[view]();
 }
 
 function txRow(x) {
@@ -568,6 +581,48 @@ function delEvt() {
   S.events = S.events.filter(x => x.id !== evId); save(); closeOv(); render(); toast('Kegiatan dihapus');
 }
 
+
+// ══════════ PENGUMUMAN ══════════
+// Admin menulis, semua orang membaca. Kartu menampilkan judul + tanggal dibuat; isi muncul saat kartu diketuk.
+let annId = 0;
+const ICO_CAL = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+const annSorted = () => S.pengumuman.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+function rAnn() {
+  const card = a => `<div class="an" role="button" tabindex="0" onclick="openAnn(${a.id})" onkeydown="if(event.key==='Enter')openAnn(${a.id})"><div class="ai"><svg viewBox="0 0 24 24" fill="none"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M15 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="m"><b>${esc(a.title)}</b><small>${ICO_CAL}Dibuat ${fmtDate(a.date)}</small></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>`;
+  const l = annSorted();
+  $('v-ann').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Pengumuman</h2></div><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openAnnForm()">+ Buat baru</button></div>
+  ${l.length ? l.map(card).join('') : `<div class="empty">${isAdmin ? 'Belum ada pengumuman. Tekan Buat baru untuk menulis.' : 'Belum ada pengumuman.'}</div>`}`;
+}
+function openAnn(id) {
+  const a = S.pengumuman.find(x => x.id === id); if (!a) return;
+  openOv(`<h3 style="align-items:flex-start;gap:10px"><span style="word-break:break-word">${esc(a.title)}</span><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <div style="color:var(--mut);font-size:13px;display:flex;align-items:center;gap:6px;margin:-4px 0 12px">${ICO_CAL}Dibuat ${fmtDate(a.date)}</div>
+  <div class="card" style="padding:14px;white-space:pre-wrap;word-break:break-word;line-height:1.65">${esc(a.body)}</div>
+  ${isAdmin ? `<div class="g2" style="margin-top:16px"><button class="btn sec" onclick="openAnnForm(${a.id})">Ubah</button><button class="btn dng" onclick="delAnn(${a.id})">Hapus</button></div>` : ''}`);
+}
+function openAnnForm(id) {
+  if (!isAdmin) return;
+  const a = S.pengumuman.find(x => x.id === id) || null; annId = a ? a.id : 0;
+  openOv(`<h3>${a ? 'Ubah pengumuman' : 'Buat pengumuman'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <label>Judul</label><input id="aTitle" maxlength="100" value="${esc(a ? a.title : '')}" placeholder="Contoh: Rapat bulanan Desember">
+  <label>Isi pengumuman</label><textarea id="aBody" rows="9" maxlength="4000" placeholder="Tulis isi pengumuman di sini…">${esc(a ? a.body : '')}</textarea>
+  <p style="color:var(--mut);font-size:12.5px;margin:10px 2px 0">${ICO_CAL.replace('class="ic"', 'class="ic" style="vertical-align:-2px;margin-right:6px"')}Tanggal dibuat ${a ? 'tetap' : 'terisi otomatis'}: ${fmtDate(a ? a.date : today())}</p>
+  <button class="btn" style="margin-top:14px" onclick="saveAnn()">Simpan</button>`);
+}
+function saveAnn() {
+  if (!isAdmin) return;
+  const title = $('aTitle').value.trim(), body = $('aBody').value.trim();
+  if (!title) return toast('Isi judul pengumuman.'); if (!body) return toast('Tulis isi pengumuman.');
+  const old = S.pengumuman.find(x => x.id === annId);
+  const a = { id: old ? old.id : Date.now(), title, body, date: old ? old.date : today() };
+  S.pengumuman = old ? S.pengumuman.map(x => x.id === a.id ? a : x) : S.pengumuman.concat(a);
+  save(); closeOv(); render(); toast('Pengumuman tersimpan');
+}
+function delAnn(id) {
+  if (!isAdmin || !confirm('Hapus pengumuman ini?')) return;
+  S.pengumuman = S.pengumuman.filter(x => x.id !== id); save(); closeOv(); render(); toast('Pengumuman dihapus');
+}
+
 // ══════════ LAPORAN ══════════
 function rRep() {
   const list = S.tx.filter(x => x.date.startsWith(rep)), tin = sum(list, 'in'), tout = sum(list, 'out');
@@ -701,7 +756,8 @@ function rSet() {
     ? `<button class="btn dng" onclick="leaveRole()">${isAdmin ? 'Keluar dari admin' : 'Ganti peran'}</button>`
     : `<p style="color:var(--mut);font-size:12.5px;margin:0 2px 14px">Data tersimpan di browser perangkat ini. Unduh cadangan JSON secara berkala agar data aman.</p><button class="btn dng" onclick="wipeAll()">Hapus semua data</button>`;
   $('v-set').innerHTML = `<div class="top"><h2>Pengaturan</h2></div>
-  <div class="set"><div class="r"><b>Peran</b><span>${role}</span></div>${adm}
+  <div class="set"><div class="r"><b>Peran</b><span>${role}</span></div>
+    <button class="r" onclick="go('ann')">Pengumuman<span class="rt">${S.pengumuman.length ? `<i class="cnt">${S.pengumuman.length}</i>` : 'Belum ada'}<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>${adm}
     <button class="r" onclick="setPin()">PIN kunci di perangkat ini<span>${S.pinHash ? 'Aktif' : 'Mati'}</span></button>
   </div>${bk}${foot}
   <p style="text-align:center;color:var(--mut);font-size:12px;margin-top:16px">PBMoney · Paguyuban Borez Money</p>`;
@@ -759,7 +815,7 @@ async function restore(k) {
 }
 function applyBackup(v) {
   if (!isAdmin) return;
-  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.iuran = v.iuran || 0; S.name = v.name || S.name;
+  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.iuran = v.iuran || 0; S.name = v.name || S.name;
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
   save(); closeOv(); render(); toast('Data dipulihkan');
 }
@@ -787,7 +843,7 @@ function enterApp() {
 }
 function showGate() {
   if (listening && db) { db.ref('kas').off(); listening = false; }
-  loaded = false; S.tx = []; S.members = []; S.events = []; dirty = false;
+  loaded = false; S.tx = []; S.members = []; S.events = []; S.pengumuman = []; dirty = false;
   ['app', 'nav'].forEach(i => $(i).classList.add('hide')); $('gate').classList.remove('hide'); gateView('choose');
 }
 function connect() {
