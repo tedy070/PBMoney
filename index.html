@@ -166,6 +166,7 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .rte:focus{border-color:var(--pri)}.rte:empty:before{content:attr(data-ph);color:#8a96b0;pointer-events:none}
 #mAmt[readonly]{background:var(--sf2);color:var(--mut);cursor:not-allowed}
 .mc small.ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--sf2);padding:1px 5px;border-radius:5px;font-size:.92em}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -636,14 +637,14 @@ function rAnn() {
   ${l.length ? l.map(card).join('') : `<div class="empty">${isAdmin ? 'Belum ada pengumuman. Tekan Buat baru untuk menulis.' : 'Belum ada pengumuman.'}</div>`}`;
 }
 // ── Format teks: isi disimpan sebagai HTML yang dibersihkan lewat daftar putih tag (aman dari skrip) ──
-const TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', P: 'p', DIV: 'p', H1: 'h3', H2: 'h3', H3: 'h3', H4: 'h3', UL: 'ul', OL: 'ol', LI: 'li', A: 'a', BR: 'br' };
+const TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', P: 'p', DIV: 'p', CODE: 'code', H1: 'h3', H2: 'h3', H3: 'h3', H4: 'h3', UL: 'ul', OL: 'ol', LI: 'li', A: 'a', BR: 'br' };
 const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'NOSCRIPT', 'TEMPLATE', 'SVG', 'MATH', 'FORM', 'INPUT', 'BUTTON', 'TEXTAREA', 'SELECT', 'LINK', 'META', 'TITLE', 'HEAD']);
 function cleanHtml(html) {
   const doc = new DOMParser().parseFromString('<body>' + (html || '') + '</body>', 'text/html');
   const walk = n => {
     let o = '';
     n.childNodes.forEach(c => {
-      if (c.nodeType === 3) o += esc(c.nodeValue);
+      if (c.nodeType === 3) o += esc(c.nodeValue).replace(/\u200B/g, '');
       else if (c.nodeType === 1 && !DROP.has(c.tagName.toUpperCase())) {
         const tag = TAGS[c.tagName.toUpperCase()], inner = walk(c);
         if (!tag) o += inner;
@@ -654,13 +655,76 @@ function cleanHtml(html) {
     });
     return o;
   };
-  return walk(doc.body).replace(/^(?:<p>(?:<br>)?<\/p>)+|(?:<p>(?:<br>)?<\/p>)+$/g, '');
+  return walk(doc.body).replace(/<(b|i|u|s|code)><\/\1>/g, '').replace(/^(?:<p>(?:<br>)?<\/p>)+|(?:<p>(?:<br>)?<\/p>)+$/g, '');
 }
 function htmlText(html) {
   const doc = new DOMParser().parseFromString('<body>' + html.replace(/<br>|<\/p>|<\/li>|<\/h3>/g, '\n') + '</body>', 'text/html');
   return doc.body.textContent.replace(/\n{3,}/g, '\n\n').trim();
 }
-const annHtml = a => a.html ? cleanHtml(a.html) : '<p style="white-space:pre-wrap">' + esc(a.body) + '</p>';
+// ── Format ala WhatsApp: *tebal*  _miring_  ~coret~  ```kode```  dan awalan baris "- " / "* " / "• " / "1. " untuk daftar ──
+const WA_INL = [[/(^|[^\w*_~`])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/g, 'b'], [/(^|[^\w*_~`])_(?=\S)([^_\n]*?\S)_(?![\w_])/g, 'i'], [/(^|[^\w*_~`])~(?=\S)([^~\n]*?\S)~(?![\w~])/g, 's']];
+const WA_UL = /^\s*[-*•]\s+/, WA_OL = /^\s*\d{1,2}[.)]\s+/;
+function waInlineStr(s) {
+  s = s.replace(/```([\s\S]+?)```/g, (m, c) => `<code>${c}</code>`);
+  for (const [re, tg] of WA_INL) s = s.replace(re, (m, a, c) => `${a}<${tg}>${c}</${tg}>`);
+  return s;
+}
+function waPost(html) {
+  const doc = new DOMParser().parseFromString('<body>' + cleanHtml(html) + '</body>', 'text/html'), res = doc.createElement('div');
+  let cur = null, list = null, kind = '';
+  const put = b => {
+    const tx = b.tagName === 'P' ? b.textContent : '', um = WA_UL.exec(tx), om = WA_OL.exec(tx);
+    if (um || om) {
+      const k = um ? 'ul' : 'ol', re = um ? WA_UL : WA_OL;
+      if (!list || kind !== k) { list = doc.createElement(k); kind = k; res.appendChild(list); }
+      const li = doc.createElement('li'); li.innerHTML = b.innerHTML;
+      const w = doc.createTreeWalker(li, 4), f = w.nextNode(); if (f) f.nodeValue = f.nodeValue.replace(re, '');
+      list.appendChild(li);
+    } else { list = null; res.appendChild(b); }
+  };
+  const flush = () => { if (cur) { put(cur); cur = null; } };
+  [...doc.body.childNodes].forEach(n => {
+    const tg = n.nodeType === 1 ? n.tagName : '';
+    if (tg === 'P' || tg === 'H3' || tg === 'UL' || tg === 'OL') { flush(); put(n); }
+    else if (tg === 'BR') { if (!cur) cur = doc.createElement('p'); flush(); }
+    else { if (!cur) cur = doc.createElement('p'); cur.appendChild(n); }
+  });
+  flush();
+  const w = doc.createTreeWalker(res, 4), nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n => {
+    if (n.parentNode.closest && n.parentNode.closest('code,a')) return;
+    const e0 = esc(n.nodeValue), h = waInlineStr(e0);
+    if (h !== e0) { const tp = doc.createElement('template'); tp.innerHTML = h; n.replaceWith(...tp.content.childNodes); }
+  });
+  return cleanHtml(res.innerHTML);
+}
+const waHtml = text => waPost(String(text || '').split('\n').map(l => '<p>' + (esc(l) || '<br>') + '</p>').join(''));
+// Saat mengetik: begitu tanda penutup (* _ ~) diketik, teksnya langsung diformat; "- " / "1. " di awal baris jadi daftar.
+function annInput(e) {
+  tbState();
+  if (e && e.isComposing) return;
+  const ed = $('aBody'), sel = getSelection();
+  if (!ed || !sel || !sel.rangeCount || !sel.isCollapsed) return;
+  const n = sel.anchorNode; if (!n || n.nodeType !== 3 || !ed.contains(n)) return;
+  const off = sel.anchorOffset, val = n.nodeValue, raw = val.slice(0, off).replace(/\u00a0/g, ' ');
+  if (raw.endsWith(' ') && off === val.length) {
+    let blk = n.parentNode; while (blk && blk !== ed && !/^(P|DIV|LI|H3)$/.test(blk.nodeName)) blk = blk.parentNode;
+    const line = blk === ed ? ((!n.previousSibling || n.previousSibling.nodeName === 'BR') ? val : '') : blk.textContent;
+    if (blk && blk.nodeName !== 'LI' && /^(?:[-*•]|\d{1,2}[.)])[ \u00a0]$/.test(line)) {
+      n.nodeValue = ''; const r = document.createRange(); r.setStart(n, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+      try { document.execCommand(/^\d/.test(line) ? 'insertOrderedList' : 'insertUnorderedList'); } catch (x) {}
+      return;
+    }
+  }
+  if (!'*_~'.includes(raw.slice(-1))) return;
+  const m = /(^|[^\w*_~`])([*_~])(?=\S)([^*_~\n]*?\S)\2$/.exec(raw); if (!m) return;
+  const start = off - m[3].length - 2, el = document.createElement({ '*': 'b', '_': 'i', '~': 's' }[m[2]]);
+  el.textContent = val.slice(start + 1, off - 1);
+  const r = document.createRange(); r.setStart(n, start); r.setEnd(n, off); r.deleteContents(); r.insertNode(el);
+  const z = document.createTextNode('\u200B'); el.after(z);
+  const c = document.createRange(); c.setStart(z, 1); c.collapse(true); sel.removeAllRanges(); sel.addRange(c);
+}
+const annHtml = a => a.html ? cleanHtml(a.html) : waHtml(a.body);
 const TB = [['bold', '<b>B</b>', 'Tebal'], ['italic', '<i>I</i>', 'Miring'], ['underline', '<u>U</u>', 'Garis bawah'], ['strikeThrough', '<s>S</s>', 'Coret'], ['h', 'Judul', 'Judul kecil'], ['insertUnorderedList', '•', 'Daftar poin'], ['insertOrderedList', '1.', 'Daftar nomor'], ['link', 'Tautan', 'Sisipkan tautan'], ['clear', 'Bersihkan', 'Hapus format']];
 function tbState() {
   const tb = $('aTb'); if (!tb) return;
@@ -693,7 +757,7 @@ function fmt(c) {
 function annPaste(e) {
   e.preventDefault();
   const tx = (e.clipboardData || window.clipboardData).getData('text/plain');
-  try { document.execCommand('insertText', false, tx); } catch (x) {}
+  try { if (!document.execCommand('insertHTML', false, waHtml(tx))) document.execCommand('insertText', false, tx); } catch (x) { try { document.execCommand('insertText', false, tx); } catch (y) {} }
 }
 function openAnn(id) {
   const a = S.pengumuman.find(x => x.id === id); if (!a) return;
@@ -705,19 +769,20 @@ function openAnn(id) {
 function openAnnForm(id) {
   if (!isAdmin) return;
   const a = S.pengumuman.find(x => x.id === id) || null; annId = a ? a.id : 0;
-  const init = a ? (a.html ? cleanHtml(a.html) : (a.body || '').split('\n').map(l => `<p>${esc(l) || '<br>'}</p>`).join('')) : '';
+  const init = a ? (a.html ? cleanHtml(a.html) : waHtml(a.body)) : '';
   openOv(`<h3>${a ? 'Ubah pengumuman' : 'Buat pengumuman'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <label>Judul</label><input id="aTitle" maxlength="100" value="${esc(a ? a.title : '')}" placeholder="Contoh: Rapat bulanan Desember">
   <label>Isi pengumuman</label>
   <div class="rtb" id="aTb" role="toolbar" aria-label="Format teks">${TB.map(([c, l, tt]) => `<button type="button" data-c="${c}" title="${tt}" aria-label="${tt}" aria-pressed="false" onmousedown="event.preventDefault()" onclick="fmt('${c}')">${l}</button>`).join('')}</div>
-  <div id="aBody" class="rte rt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Isi pengumuman" data-ph="Tulis isi pengumuman di sini…" onpaste="annPaste(event)" oninput="tbState()">${init}</div>
+  <div id="aBody" class="rte rt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Isi pengumuman" data-ph="Tulis isi pengumuman di sini…" onpaste="annPaste(event)" oninput="annInput(event)">${init}</div>
+  <p style="color:var(--mut);font-size:12.5px;margin:8px 2px 0">Tips: ketik <b>*tebal*</b>, <i>_miring_</i>, <s>~coret~</s>, atau awali baris dengan <b>-</b> atau <b>1.</b> untuk daftar, seperti di WhatsApp.</p>
   <p style="color:var(--mut);font-size:12.5px;margin:10px 2px 0">${ICO_CAL.replace('class="ic"', 'class="ic" style="vertical-align:-2px;margin-right:6px"')}Tanggal dibuat ${a ? 'tetap' : 'terisi otomatis'}: ${fmtDate(a ? a.date : today())}</p>
   <button class="btn" style="margin-top:14px" onclick="saveAnn()">Simpan</button>`);
   try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) {}
 }
 function saveAnn() {
   if (!isAdmin) return;
-  const title = $('aTitle').value.trim(), html = cleanHtml($('aBody').innerHTML), body = htmlText(html);
+  const title = $('aTitle').value.trim(), html = waPost($('aBody').innerHTML), body = htmlText(html);
   if (!title) return toast('Isi judul pengumuman.'); if (!body) return toast('Tulis isi pengumuman.');
   if (body.length > 4000 || html.length > 12000) return toast('Isi pengumuman terlalu panjang.');
   const old = S.pengumuman.find(x => x.id === annId);
