@@ -167,6 +167,23 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 #mAmt[readonly]{background:var(--sf2);color:var(--mut);cursor:not-allowed}
 .mc small.ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rt code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--sf2);padding:1px 5px;border-radius:5px;font-size:.92em}
+.pf{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none;font-family:Sora,sans-serif;font-weight:700;font-size:19px;box-shadow:0 0 0 2.5px #fff,0 0 0 3.5px rgba(16,32,74,.14)}
+.pf img{width:100%;height:100%;object-fit:cover;display:block}.pf.mid{width:72px;height:72px;font-size:27px}.pf.big{width:96px;height:96px;font-size:34px}
+.treewrap{display:flex;overflow-x:auto;padding:8px 2px 20px;-webkit-overflow-scrolling:touch}
+.tree{position:relative;margin:0 auto;flex:none}.tree svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.nd{position:absolute;width:100px;height:128px;border-radius:16px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3);transition:transform .16s ease}
+.nd:active{transform:translateY(1px) scale(.985)}
+.nd.root{background:linear-gradient(135deg,#4b86ff,#1f55d6);color:#fff}
+.nd .nm{height:32px;margin-top:6px;width:100%;display:flex;align-items:center;justify-content:center}
+.nd .nm span,.nd .jb span{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.nd .nm span{-webkit-line-clamp:2;font-weight:700;font-size:12.5px;line-height:16px}
+.nd .jb{height:24px;margin-top:2px;width:100%;display:flex;align-items:flex-start;justify-content:center}
+.nd .jb span{-webkit-line-clamp:2;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;line-height:12px;color:var(--pt)}
+.nd.root .jb span{color:#cfe0ff}
+.sfph{position:relative;width:72px;flex:none}
+.sfph .cam{position:absolute;right:-4px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;border:2.5px solid var(--bg)}
+.sfph .cam svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lnk{color:var(--out);font-weight:700;font-size:13px;padding:8px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -245,6 +262,7 @@ nav .add:active{transform:translateY(-10px) scale(.94)}
   <section id="v-his" class="hide"></section>
   <section id="v-set" class="hide"></section>
   <section id="v-ann" class="hide"></section>
+  <section id="v-str" class="hide"></section>
 </div>
 
 <nav id="nav" class="hide"><div>
@@ -287,14 +305,14 @@ const firebaseConfig = {
 const ADMIN_EMAIL = 'admin@pbmoney.app';
 const fbReady = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'].every(k => firebaseConfig[k]);
 
-const KEY = 'pbmoney:state', BK = 'pbmoney:backups', PREF = 'pbmoney:prefs', ROLE = 'pbmoney:role';
+const KEY = 'pbmoney:state', BK = 'pbmoney:backups', PREF = 'pbmoney:prefs', ROLE = 'pbmoney:role', FOTO = 'pbmoney:foto';
 function store(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
 function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast('Gagal menyimpan: penyimpanan browser penuh atau dimatikan.'); return false; } }
 const clean = o => JSON.parse(JSON.stringify(o));
 const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
-let S = { tx: [], members: [], events: [], pengumuman: [], iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
-let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, pengumuman: {}, meta: '' };
+let S = { tx: [], members: [], events: [], pengumuman: [], struktur: [], periode: '', foto: {}, iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
+let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, pengumuman: {}, struktur: {}, meta: '' };
 let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, popFor = 0, saveT, locked = false;
 
 const $ = id => document.getElementById(id);
@@ -310,13 +328,13 @@ function cats(t) { return (t === 'in' ? CAT_IN : CAT_OUT).concat(S.cats[t] || []
 function sum(list, t) { return list.filter(x => x.type === t).reduce((a, x) => a + x.amt, 0); }
 const sorted = () => S.tx.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, pengumuman: S.pengumuman, iuran: S.iuran, cats: S.cats, name: S.name });
-const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats });
+const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, pengumuman: S.pengumuman, struktur: S.struktur, periode: S.periode, iuran: S.iuran, cats: S.cats, name: S.name });
+const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats, periode: S.periode });
 function savePrefs() { put(PREF, { pinHash: S.pinHash }); }
 function loadPrefs() { const p = store(PREF), old = store(KEY) || {}; S.pinHash = (p ? p.pinHash : old.pinHash) || ''; }
 function loadLocal() {
   const v = store(KEY) || {};
-  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.iuran = v.iuran || 0; S.name = v.name || '';
+  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.struktur = toArr(v.struktur); S.periode = v.periode || ''; S.foto = store(FOTO) || {}; S.iuran = v.iuran || 0; S.name = v.name || '';
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
 }
 // Simpan: mode perangkat -> localStorage; mode cloud -> hanya selisih per item ke RTDB (aman bila dua admin mengedit bersamaan).
@@ -329,17 +347,18 @@ function save() {
     list.forEach(x => { const k = String(x.id), c = clean(x); seen[k] = 1; if (remote[n][k] !== ss(c)) up[n + '/' + k] = c; });
     Object.keys(remote[n]).forEach(k => { if (!seen[k]) up[n + '/' + k] = null; });
   };
-  sync('tx', S.tx); sync('members', S.members); sync('events', S.events); sync('pengumuman', S.pengumuman);
+  sync('tx', S.tx); sync('members', S.members); sync('events', S.events); sync('pengumuman', S.pengumuman); sync('struktur', S.struktur);
   const m = metaOf(); if (remote.meta !== ss(m)) up.meta = m;
   if (Object.keys(up).length) db.ref('kas').update(up).catch(e => toast('Gagal menyimpan: ' + e.message));
 }
 function applyRemote(v) {
-  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), pgs = Object.values(v.pengumuman || {}), meta = v.meta || {};
+  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), pgs = Object.values(v.pengumuman || {}), sts = Object.values(v.struktur || {}), meta = v.meta || {};
   remote.tx = {}; tx.forEach(x => remote.tx[x.id] = ss(x));
   remote.members = {}; ms.forEach(x => remote.members[x.id] = ss(x));
   remote.events = {}; evs.forEach(x => remote.events[x.id] = ss(x));
   remote.pengumuman = {}; pgs.forEach(x => remote.pengumuman[x.id] = ss(x));
-  S.tx = tx; S.members = ms; S.events = evs; S.pengumuman = pgs; S.iuran = meta.iuran || 0; S.name = meta.name || '';
+  remote.struktur = {}; sts.forEach(x => remote.struktur[x.id] = ss(x));
+  S.tx = tx; S.members = ms; S.events = evs; S.pengumuman = pgs; S.struktur = sts; S.periode = meta.periode || ''; S.iuran = meta.iuran || 0; S.name = meta.name || '';
   S.cats = { in: toArr(meta.cats && meta.cats.in), out: toArr(meta.cats && meta.cats.out) };
   remote.meta = ss(metaOf()); loaded = true;
   if (!$('ov').classList.contains('hide')) dirty = true; else if (view === 'his' && $('hisBody')) hisBody(); else render();
@@ -355,15 +374,15 @@ async function tryUnlock() {
 // ══════════ NAVIGASI ══════════
 document.querySelectorAll('nav [data-v]').forEach(b => b.onclick = () => go(b.dataset.v));
 function go(v) {
-  view = v;
-  ['home', 'agr', 'rep', 'his', 'set', 'ann'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
-  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === (v === 'ann' ? 'set' : v)));
+  view = v; if (v === 'str') attachFoto(); else detachFoto();
+  ['home', 'agr', 'rep', 'his', 'set', 'ann', 'str'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
+  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === (v === 'ann' || v === 'str' ? 'set' : v)));
   render(); scrollTo(0, 0);
 }
 function render() {
   closeMenu();
   if (cloud && !loaded) { $('v-' + view).innerHTML = '<div class="empty">Memuat data…</div>'; return; }
-  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet, ann: rAnn })[view]();
+  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet, ann: rAnn, str: rStr })[view]();
 }
 
 function txRow(x) {
@@ -795,6 +814,149 @@ function delAnn(id) {
   S.pengumuman = S.pengumuman.filter(x => x.id !== id); save(); closeOv(); render(); toast('Pengumuman dihapus');
 }
 
+
+// ══════════ STRUKTUR ORGANISASI ══════════
+// Bagan atas ke bawah tanpa tingkat: bentuknya mengikuti "atasan" tiap orang. Foto disimpan terpisah (fotoStruktur/{id}) dan hanya dimuat saat halaman ini dibuka.
+const PGY_NAMA = 'PAGUYUBAN BORES', PGY_TAG = 'Perseduluran Rantau';
+const PFBG = ['#cfd9ff', '#ffd9d6', '#d6f2e3', '#fff0c9', '#e1d6ff', '#d3eefb', '#ffe0c7'], PFFG = ['#1f3f9e', '#9b2c2c', '#1d6b41', '#8a5a00', '#4b2f9e', '#0a5a8c', '#9a4608'];
+let strId = 0, strPend = null, fotoOn = false;
+const okFoto = f => typeof f === 'string' && f.length <= 90000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(f);
+const strKids = id => S.struktur.filter(x => (x.atasan || 0) === id).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id);
+function strDesc(id) {
+  if (!id) return [];
+  const out = [], q = [id], seen = new Set([id]);
+  while (q.length) { const c = q.pop(); S.struktur.forEach(x => { if (x.atasan === c && !seen.has(x.id)) { seen.add(x.id); out.push(x.id); q.push(x.id); } }); }
+  return out;
+}
+function pfHtml(id, nama, cls, ov) {
+  const f = ov !== undefined && ov !== null ? ov : S.foto[id], i = Math.abs(id || 0) % PFBG.length;
+  return okFoto(f) ? `<div class="pf ${cls || ''}"><img src="${f}" alt=""></div>`
+    : `<div class="pf ${cls || ''}" style="background:${PFBG[i]};color:${PFFG[i]}">${esc((nama || '').trim().charAt(0).toUpperCase() || '+')}</div>`;
+}
+// Tata letak: daun (posisi tanpa bawahan) berurutan dari kiri, induk berada di tengah anak-anaknya.
+const ST_W = 100, ST_G = 12, ST_H = 128, ST_V = 34;
+function strLayout() {
+  const ids = new Set(S.struktur.map(x => x.id)), seen = new Set(), cards = [], pos = {}, kidsOf = {};
+  let leaf = 0, maxD = 0;
+  const place = (n, d, root) => {
+    seen.add(n.id); maxD = Math.max(maxD, d);
+    const kids = strKids(n.id).filter(k => !seen.has(k.id)); let x;
+    if (!kids.length) { x = leaf * (ST_W + ST_G); leaf++; }
+    else { const xs = kids.map(k => place(k, d + 1, false)); x = (xs[0] + xs[xs.length - 1]) / 2; kidsOf[n.id] = kids.map(k => k.id); }
+    pos[n.id] = { x, y: d * (ST_H + ST_V) }; cards.push({ n, x, y: d * (ST_H + ST_V), root }); return x;
+  };
+  S.struktur.filter(x => !x.atasan || !ids.has(x.atasan)).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id).forEach(r => place(r, 0, true));
+  S.struktur.filter(x => !seen.has(x.id)).forEach(r => place(r, 0, true));
+  let d = '';
+  Object.keys(kidsOf).forEach(pid => {
+    const p = pos[pid], px = p.x + ST_W / 2, pb = p.y + ST_H, mid = pb + ST_V / 2, cx = kidsOf[pid].map(k => pos[k].x + ST_W / 2);
+    d += `M${px} ${pb}V${mid}M${Math.min(px, ...cx)} ${mid}H${Math.max(px, ...cx)}` + cx.map(c => `M${c} ${mid}V${pos[kidsOf[pid][cx.indexOf(c)]].y}`).join('');
+  });
+  const w = Math.max(0, ...cards.map(c => c.x + ST_W)), h = cards.length ? maxD * (ST_H + ST_V) + ST_H : 0;
+  return { cards, d, w, h };
+}
+function rStr() {
+  const L = strLayout();
+  const per = S.periode ? `<span style="display:inline-block;margin-top:8px;padding:3px 12px;border-radius:12px;background:rgba(255,255,255,.18);font-size:11px;font-weight:700">${esc(S.periode)}</span>` : '';
+  const card = c => `<div class="nd ${c.root ? 'root' : ''}" role="button" tabindex="0" style="left:${c.x}px;top:${c.y}px" onclick="openStr(${c.n.id})" onkeydown="if(event.key==='Enter')openStr(${c.n.id})" title="${esc(c.n.nama)} · ${esc(c.n.jabatan)}">${pfHtml(c.n.id, c.n.nama)}<div class="nm"><span>${esc(c.n.nama)}</span></div><div class="jb"><span>${esc(c.n.jabatan)}</span></div></div>`;
+  $('v-str').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Struktur Organisasi</h2></div><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openStr()">+ Tambah</button></div>
+  <div class="hero" style="text-align:center;padding:16px"><b style="font-family:Sora,sans-serif;font-size:16px;letter-spacing:.6px">${PGY_NAMA}</b><small style="display:block;margin-top:2px">${PGY_TAG}</small>${per}<div class="adm"><button onclick="openPeriode()" style="color:#fff;opacity:.85;font-size:12px;text-decoration:underline;margin-top:8px">${S.periode ? 'Ubah' : 'Atur'} masa bakti</button></div></div>
+  ${L.cards.length ? `<div class="treewrap" style="margin-top:14px"><div class="tree" style="width:${L.w}px;height:${L.h}px"><svg width="${L.w}" height="${L.h}" viewBox="0 0 ${L.w} ${L.h}"><path d="${L.d}" fill="none" stroke="#9fb2d8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${L.cards.map(card).join('')}</div></div>` : `<div class="empty">${isAdmin ? 'Belum ada struktur organisasi. Tekan + Tambah untuk membuat posisi pertama.' : 'Struktur organisasi belum diisi.'}</div>`}`;
+}
+function attachFoto() {
+  if (!cloud || !db || fotoOn) return; fotoOn = true;
+  db.ref('fotoStruktur').on('value', s => { S.foto = s.val() || {}; if (view === 'str') rStr(); }, e => toast('Gagal memuat foto: ' + e.message));
+}
+function detachFoto() { if (fotoOn && db) { db.ref('fotoStruktur').off(); fotoOn = false; } }
+function viewStr(id) {
+  const n = S.struktur.find(x => x.id === id); if (!n) return;
+  const up = S.struktur.find(x => x.id === n.atasan), kids = strKids(n.id);
+  openOv(`<h3 style="justify-content:flex-end"><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-10px">${pfHtml(n.id, n.nama, 'big')}<b style="font-size:20px;font-family:Sora,sans-serif;text-align:center;word-break:break-word">${esc(n.nama)}</b><span style="background:color-mix(in srgb,var(--pri) 12%,transparent);color:var(--pt);font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase;padding:5px 14px;border-radius:14px;text-align:center;word-break:break-word">${esc(n.jabatan)}</span></div>
+  <div class="card" style="padding:14px;margin-top:16px"><small style="color:var(--mut)">Atasan</small><div style="font-weight:700;margin:2px 0 12px">${up ? esc(up.nama) + ' · ' + esc(up.jabatan) : '—'}</div><small style="color:var(--mut)">Bawahan</small><div style="font-weight:700;margin-top:2px">${kids.length ? kids.map(k => esc(k.nama)).join(', ') : '—'}</div></div>`);
+}
+function openStr(id) { if (!isAdmin) return id ? viewStr(id) : null; strForm(id); }
+function drawPf() {
+  const w = $('sPfWrap'); if (!w) return;
+  const cur = strPend !== null ? strPend : S.foto[strId];
+  w.innerHTML = pfHtml(strId, ($('sNama').value || ''), 'mid', strPend);
+  $('sDelF').classList.toggle('hide', !okFoto(cur));
+}
+function strForm(id) {
+  if (!isAdmin) return;
+  const e = S.struktur.find(x => x.id === id) || null; strId = e ? e.id : 0; strPend = null;
+  const bad = new Set(e ? [e.id].concat(strDesc(e.id)) : []);
+  const opts = S.struktur.filter(x => !bad.has(x.id)).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(x => `<option value="${x.id}" ${e && e.atasan === x.id ? 'selected' : ''}>${esc(x.nama)} · ${esc(x.jabatan)}</option>`).join('');
+  openOv(`<h3>${e ? 'Ubah posisi' : 'Tambah posisi'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px"><div class="sfph"><div id="sPfWrap">${pfHtml(strId, e ? e.nama : '', 'mid')}</div><span class="cam"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span></div>
+    <div style="flex:1;display:grid;gap:4px;text-align:center"><button type="button" class="btn sec" style="padding:10px" onclick="$('sFile').click()">Pilih / ambil foto</button><button type="button" id="sDelF" class="lnk ${e && okFoto(S.foto[e.id]) ? '' : 'hide'}" onclick="strDelFoto()">Hapus foto</button></div>
+    <input type="file" id="sFile" accept="image/*" class="hide" onchange="strPhoto(this)"></div>
+  <label>Nama</label><input id="sNama" maxlength="60" value="${esc(e ? e.nama : '')}" placeholder="Nama lengkap" oninput="drawPf()">
+  <label>Jabatan</label><input id="sJab" maxlength="60" value="${esc(e ? e.jabatan : '')}" placeholder="Contoh: Ketua, Bendahara, Seksi Acara">
+  <label>Atasan (melapor ke)</label><select id="sAts"><option value="0">Tidak ada (posisi paling atas)</option>${opts}</select>
+  ${e ? `<label>Urutan di antara posisi yang sejajar</label><div class="g2"><button class="btn sec" onclick="strMove(-1)">‹ Geser kiri</button><button class="btn sec" onclick="strMove(1)">Geser kanan ›</button></div>` : ''}
+  <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveStr()">Simpan</button>${e ? '<button class="btn dng" onclick="delStr(' + e.id + ')">Hapus posisi</button>' : ''}</div>`);
+  if (e && e.atasan && !$('sAts').value) $('sAts').value = '0';
+}
+async function fotoFromFile(file) {
+  const bmp = window.createImageBitmap ? await createImageBitmap(file) : await new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => no(new Error('gambar')); im.src = u; });
+  const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, s = Math.min(w, h);
+  const enc = (size, q) => { const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, size, size); x.drawImage(bmp, (w - s) / 2, (h - s) / 2, s, s, 0, 0, size, size); return c.toDataURL('image/jpeg', q); };
+  let out = enc(256, .82); if (out.length > 60000) out = enc(256, .68); if (out.length > 60000) out = enc(192, .68);
+  return out;
+}
+async function strPhoto(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+  if (!/^image\//.test(f.type)) return toast('Pilih berkas gambar (JPG atau PNG).');
+  if (f.size > 15 * 1024 * 1024) return toast('Foto terlalu besar (maksimal 15 MB).');
+  try { strPend = await fotoFromFile(f); drawPf(); } catch (e) { toast('Foto tidak bisa dibaca.'); }
+}
+function strDelFoto() { strPend = ''; drawPf(); }
+async function strSaveFoto(id, data) {
+  if (data) S.foto[id] = data; else delete S.foto[id];
+  try {
+    if (cloud) { const r = db.ref('fotoStruktur/' + id); if (data) await r.set(data); else await r.remove(); }
+    else put(FOTO, S.foto);
+  } catch (e) { toast('Foto gagal disimpan: ' + e.message); }
+}
+async function saveStr() {
+  if (!isAdmin) return;
+  const nama = $('sNama').value.trim(), jab = $('sJab').value.trim(), ats = parseInt($('sAts').value || '0', 10) || 0;
+  if (!nama) return toast('Isi nama.'); if (!jab) return toast('Isi jabatan.');
+  const old = S.struktur.find(x => x.id === strId);
+  if (ats && strId && (ats === strId || strDesc(strId).includes(ats))) return toast('Atasan tidak valid.');
+  const id = old ? old.id : Date.now(), sibs = S.struktur.filter(x => (x.atasan || 0) === ats && x.id !== id);
+  const urut = old && (old.atasan || 0) === ats ? (old.urut || 0) : sibs.reduce((m, x) => Math.max(m, x.urut || 0), -1) + 1;
+  const pos = { id, nama, jabatan: jab, atasan: ats, urut };
+  S.struktur = old ? S.struktur.map(x => x.id === id ? pos : x) : S.struktur.concat(pos);
+  save();
+  if (strPend !== null) await strSaveFoto(id, strPend);
+  closeOv(); render(); toast('Posisi tersimpan');
+}
+function strMove(dir) {
+  const e = S.struktur.find(x => x.id === strId); if (!isAdmin || !e) return;
+  if ((parseInt($('sAts').value || '0', 10) || 0) !== (e.atasan || 0)) return toast('Simpan perubahan atasan dulu.');
+  const sibs = strKids(e.atasan || 0), i = sibs.findIndex(x => x.id === e.id), j = i + dir;
+  if (j < 0 || j >= sibs.length) return toast(dir < 0 ? 'Sudah paling kiri.' : 'Sudah paling kanan.');
+  [sibs[i], sibs[j]] = [sibs[j], sibs[i]];
+  const pos = {}; sibs.forEach((s, k) => pos[s.id] = k);
+  S.struktur = S.struktur.map(x => x.id in pos ? Object.assign({}, x, { urut: pos[x.id] }) : x);
+  save(); render(); toast(dir < 0 ? 'Digeser ke kiri' : 'Digeser ke kanan');
+}
+async function delStr(id) {
+  const x = S.struktur.find(v => v.id === id);
+  if (!isAdmin || !x || !confirm('Hapus posisi ' + x.nama + '? Bawahannya akan naik ke atasan posisi ini.')) return;
+  const up = x.atasan || 0, kids = strKids(id), order = [];
+  strKids(up).forEach(s => { if (s.id === id) kids.forEach(k => order.push(k.id)); else order.push(s.id); });
+  S.struktur = S.struktur.filter(v => v.id !== id).map(v => { const i = order.indexOf(v.id); return i < 0 ? v : Object.assign({}, v, { atasan: up, urut: i }); });
+  save(); await strSaveFoto(id, ''); closeOv(); render(); toast('Posisi dihapus');
+}
+function openPeriode() {
+  if (!isAdmin) return;
+  openOv(`<h3>Masa bakti<button onclick="closeOv()" aria-label="Tutup">×</button></h3><label>Teks yang ditampilkan di atas bagan</label><input id="pPer" maxlength="40" value="${esc(S.periode)}" placeholder="Contoh: Masa bakti 2026–2028"><button class="btn" style="margin-top:16px" onclick="savePeriode()">Simpan</button>`);
+}
+function savePeriode() { if (!isAdmin) return; S.periode = $('pPer').value.trim(); save(); closeOv(); render(); toast('Tersimpan'); }
+
 // ══════════ LAPORAN ══════════
 function rRep() {
   const list = S.tx.filter(x => x.date.startsWith(rep)), tin = sum(list, 'in'), tout = sum(list, 'out');
@@ -929,7 +1091,8 @@ function rSet() {
     : `<p style="color:var(--mut);font-size:12.5px;margin:0 2px 14px">Data tersimpan di browser perangkat ini. Unduh cadangan JSON secara berkala agar data aman.</p><button class="btn dng" onclick="wipeAll()">Hapus semua data</button>`;
   $('v-set').innerHTML = `<div class="top"><h2>Pengaturan</h2></div>
   <div class="set"><div class="r"><b>Peran</b><span>${role}</span></div>
-    <button class="r" onclick="go('ann')">Pengumuman<span class="rt">${S.pengumuman.length ? `<i class="cnt">${S.pengumuman.length}</i>` : 'Belum ada'}<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>${adm}
+    <button class="r" onclick="go('ann')">Pengumuman<span class="rt">${S.pengumuman.length ? `<i class="cnt">${S.pengumuman.length}</i>` : 'Belum ada'}<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>
+    <button class="r" onclick="go('str')">Struktur Organisasi<span class="rt">Bagan<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>${adm}
     <button class="r" onclick="setPin()">PIN kunci di perangkat ini<span>${S.pinHash ? 'Aktif' : 'Mati'}</span></button>
   </div>${bk}${foot}
   <p style="text-align:center;color:var(--mut);font-size:12px;margin-top:16px">PBMoney · Paguyuban Borez Money</p>`;
@@ -959,7 +1122,7 @@ function editName() { const n = prompt('Nama pengelola kas', S.name); if (n === 
 function wipeAll() {
   if (!confirm('Hapus SEMUA transaksi, anggota, dan cadangan di perangkat ini?')) return;
   if (!confirm('Yakin? Tindakan ini tidak bisa dibatalkan.')) return;
-  try { localStorage.removeItem(KEY); localStorage.removeItem(BK); } catch (e) {}
+  try { localStorage.removeItem(KEY); localStorage.removeItem(BK); localStorage.removeItem(FOTO); } catch (e) {}
   location.reload();
 }
 
@@ -987,7 +1150,7 @@ async function restore(k) {
 }
 function applyBackup(v) {
   if (!isAdmin) return;
-  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.iuran = v.iuran || 0; S.name = v.name || S.name;
+  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.struktur = toArr(v.struktur).filter(x => x && x.id && x.nama); S.periode = v.periode || S.periode; S.iuran = v.iuran || 0; S.name = v.name || S.name;
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
   save(); closeOv(); render(); toast('Data dipulihkan');
 }
@@ -1015,7 +1178,7 @@ function enterApp() {
 }
 function showGate() {
   if (listening && db) { db.ref('kas').off(); listening = false; }
-  loaded = false; S.tx = []; S.members = []; S.events = []; S.pengumuman = []; dirty = false;
+  loaded = false; S.tx = []; S.members = []; S.events = []; S.pengumuman = []; S.struktur = []; S.foto = {}; detachFoto(); dirty = false;
   ['app', 'nav'].forEach(i => $(i).classList.add('hide')); $('gate').classList.remove('hide'); gateView('choose');
 }
 function connect() {
