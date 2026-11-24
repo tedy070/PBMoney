@@ -184,6 +184,11 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .sfph .cam{position:absolute;right:-4px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;border:2.5px solid var(--bg)}
 .sfph .cam svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .lnk{color:var(--out);font-weight:700;font-size:13px;padding:8px}
+.chk{max-height:190px;overflow:auto;border:1.5px solid var(--ln);border-radius:12px;background:var(--sf);padding:4px;box-shadow:inset 0 1px 3px var(--insh)}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;font-size:14px}
+.ci:active{background:var(--sf2)}.ci span{flex:1;min-width:0;word-break:break-word}
+.ci input[type=checkbox]{width:22px;height:22px;padding:0;border-radius:6px;flex:none;box-shadow:none;accent-color:var(--pri)}
+.chk .none{padding:12px 10px;color:var(--mut);font-size:13px}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -821,39 +826,104 @@ const PGY_NAMA = 'PAGUYUBAN BORES', PGY_TAG = 'Perseduluran Rantau';
 const PFBG = ['#cfd9ff', '#ffd9d6', '#d6f2e3', '#fff0c9', '#e1d6ff', '#d3eefb', '#ffe0c7'], PFFG = ['#1f3f9e', '#9b2c2c', '#1d6b41', '#8a5a00', '#4b2f9e', '#0a5a8c', '#9a4608'];
 let strId = 0, strPend = null, fotoOn = false;
 const okFoto = f => typeof f === 'string' && f.length <= 90000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(f);
-const strKids = id => S.struktur.filter(x => (x.atasan || 0) === id).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id);
+// "atasan" boleh lebih dari satu: disimpan sebagai daftar id (data lama berupa satu angka tetap terbaca).
+const strPar = n => [...new Set((typeof n.atasan === 'number' ? [n.atasan] : toArr(n.atasan)).map(Number).filter(v => v && v !== n.id))];
+const strKey = n => strPar(n).sort((a, b) => a - b).join(',');
+const strKids = id => S.struktur.filter(x => strPar(x).includes(id)).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id);
 function strDesc(id) {
   if (!id) return [];
   const out = [], q = [id], seen = new Set([id]);
-  while (q.length) { const c = q.pop(); S.struktur.forEach(x => { if (x.atasan === c && !seen.has(x.id)) { seen.add(x.id); out.push(x.id); q.push(x.id); } }); }
+  while (q.length) { const c = q.pop(); S.struktur.forEach(x => { if (strPar(x).includes(c) && !seen.has(x.id)) { seen.add(x.id); out.push(x.id); q.push(x.id); } }); }
   return out;
+}
+function strRenumber() {
+  const g = {}; S.struktur.forEach(x => (g[strKey(x)] = g[strKey(x)] || []).push(x));
+  const pos = {}; Object.values(g).forEach(L => L.sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id).forEach((x, i) => pos[x.id] = i));
+  S.struktur = S.struktur.map(x => x.urut === pos[x.id] ? x : Object.assign({}, x, { urut: pos[x.id] }));
 }
 function pfHtml(id, nama, cls, ov) {
   const f = ov !== undefined && ov !== null ? ov : S.foto[id], i = Math.abs(id || 0) % PFBG.length;
   return okFoto(f) ? `<div class="pf ${cls || ''}"><img src="${f}" alt=""></div>`
     : `<div class="pf ${cls || ''}" style="background:${PFBG[i]};color:${PFFG[i]}">${esc((nama || '').trim().charAt(0).toUpperCase() || '+')}</div>`;
 }
-// Tata letak: daun (posisi tanpa bawahan) berurutan dari kiri, induk berada di tengah anak-anaknya.
-const ST_W = 100, ST_G = 12, ST_H = 128, ST_V = 34;
-function strLayout() {
-  const ids = new Set(S.struktur.map(x => x.id)), seen = new Set(), cards = [], pos = {}, kidsOf = {};
+const ST_W = 100, ST_G = 12, ST_H = 128, ST_V = 34, ST_DW = 8;
+function layoutTree(par) {
+  const seen = new Set(), cards = [], pos = {}, kidsOf = {};
+  const kids = id => S.struktur.filter(x => par(x).includes(id) && !seen.has(x.id)).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id);
   let leaf = 0, maxD = 0;
   const place = (n, d, root) => {
     seen.add(n.id); maxD = Math.max(maxD, d);
-    const kids = strKids(n.id).filter(k => !seen.has(k.id)); let x;
-    if (!kids.length) { x = leaf * (ST_W + ST_G); leaf++; }
-    else { const xs = kids.map(k => place(k, d + 1, false)); x = (xs[0] + xs[xs.length - 1]) / 2; kidsOf[n.id] = kids.map(k => k.id); }
+    const ks = kids(n.id); let x;
+    if (!ks.length) { x = leaf * (ST_W + ST_G); leaf++; }
+    else { const xs = ks.map(k => place(k, d + 1, false)); x = (xs[0] + xs[xs.length - 1]) / 2; kidsOf[n.id] = ks.map(k => k.id); }
     pos[n.id] = { x, y: d * (ST_H + ST_V) }; cards.push({ n, x, y: d * (ST_H + ST_V), root }); return x;
   };
-  S.struktur.filter(x => !x.atasan || !ids.has(x.atasan)).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id).forEach(r => place(r, 0, true));
+  S.struktur.filter(x => !par(x).length).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id).forEach(r => place(r, 0, true));
   S.struktur.filter(x => !seen.has(x.id)).forEach(r => place(r, 0, true));
   let d = '';
   Object.keys(kidsOf).forEach(pid => {
     const p = pos[pid], px = p.x + ST_W / 2, pb = p.y + ST_H, mid = pb + ST_V / 2, cx = kidsOf[pid].map(k => pos[k].x + ST_W / 2);
-    d += `M${px} ${pb}V${mid}M${Math.min(px, ...cx)} ${mid}H${Math.max(px, ...cx)}` + cx.map(c => `M${c} ${mid}V${pos[kidsOf[pid][cx.indexOf(c)]].y}`).join('');
+    d += `M${px} ${pb}V${mid}M${Math.min(px, ...cx)} ${mid}H${Math.max(px, ...cx)}` + cx.map((c, i) => `M${c} ${mid}V${pos[kidsOf[pid][i]].y}`).join('');
   });
-  const w = Math.max(0, ...cards.map(c => c.x + ST_W)), h = cards.length ? maxD * (ST_H + ST_V) + ST_H : 0;
-  return { cards, d, w, h };
+  return { cards, d, w: Math.max(0, ...cards.map(c => c.x + ST_W)), h: cards.length ? maxD * (ST_H + ST_V) + ST_H : 0 };
+}
+// Tata letak berlapis untuk bagan dengan beberapa atasan: lapisan = jalur terpanjang dari posisi paling atas; garis yang melewati
+// beberapa lapisan dilewatkan lewat titik-titik bantu supaya tidak menembus kartu; urutan dan posisi dirapikan lewat rata-rata (barycenter).
+function layoutDag(par) {
+  const nodes = S.struktur, parents = {}, depth = {}, vis = {}, items = {}, layers = [];
+  nodes.forEach(n => parents[n.id] = par(n));
+  const dep = id => {
+    if (depth[id] !== undefined) return depth[id];
+    vis[id] = 1; let m = -1; parents[id].forEach(p => { if (!vis[p]) m = Math.max(m, dep(p)); }); vis[id] = 0; return depth[id] = m + 1;
+  };
+  nodes.forEach(n => dep(n.id));
+  const mk = o => Object.assign({ up: [], down: [], i: 0, x: 0, off: 0 }, o);
+  const link = (a, b) => { a.down.push(b); b.up.push(a); };
+  const lay = d => layers[d] || (layers[d] = []);
+  nodes.forEach(n => { const it = mk({ key: 'n' + n.id, id: n.id, dummy: false, d: depth[n.id], w: ST_W, u: n.urut || 0, tid: n.id }); items[it.key] = it; lay(it.d).push(it); });
+  nodes.forEach(n => parents[n.id].forEach(p => {
+    if (depth[p] >= depth[n.id]) return;
+    let prev = items['n' + p];
+    for (let d = depth[p] + 1; d < depth[n.id]; d++) { const du = mk({ key: `d${p}_${n.id}_${d}`, dummy: true, d, w: ST_DW, u: n.urut || 0, tid: n.id }); items[du.key] = du; lay(d).push(du); link(prev, du); prev = du; }
+    link(prev, items['n' + n.id]);
+  }));
+  const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const idx = () => layers.forEach(L => L.forEach((it, i) => it.i = i));
+  const sortBy = (L, bk) => L.sort((a, b) => (bk(a) - bk(b)) || (a.u - b.u) || (a.tid - b.tid) || (a.dummy ? 1 : 0) - (b.dummy ? 1 : 0));
+  sortBy(layers[0], it => 0); idx();
+  for (let r = 0; r < 4; r++) {
+    for (let l = 1; l < layers.length; l++) { sortBy(layers[l], it => it.up.length ? mean(it.up.map(x => x.i)) : it.i); idx(); }
+    for (let l = layers.length - 2; l >= 0; l--) { sortBy(layers[l], it => it.down.length ? mean(it.down.map(x => x.i)) : it.i); idx(); }
+  }
+  for (let l = 1; l < layers.length; l++) { sortBy(layers[l], it => it.up.length ? mean(it.up.map(x => x.i)) : it.i); idx(); }
+  const gap = (a, b) => (a.dummy || b.dummy) ? 10 : ST_G;
+  layers.forEach(L => { let x = 0; L.forEach((it, i) => { if (i) x += gap(L[i - 1], it); it.off = x; it.x = x; x += it.w; }); L.total = x; });
+  const W0 = Math.max(...layers.map(L => L.total)); layers.forEach(L => L.forEach(it => it.x += (W0 - L.total) / 2));
+  const place = (L, want) => {   // posisi terbaik (kuadrat terkecil) dengan jarak minimum antar kartu: isotonic regression
+    const blocks = []; L.forEach((it, i) => {
+      blocks.push({ s: want[i] - it.off, n: 1 });
+      while (blocks.length > 1 && blocks[blocks.length - 2].s / blocks[blocks.length - 2].n > blocks[blocks.length - 1].s / blocks[blocks.length - 1].n) { const b = blocks.pop(), a = blocks.pop(); blocks.push({ s: a.s + b.s, n: a.n + b.n }); }
+    });
+    let k = 0; blocks.forEach(b => { const v = b.s / b.n; for (let j = 0; j < b.n; j++, k++) L[k].x = v + L[k].off; });
+  };
+  for (let r = 0; r < 6; r++) {
+    for (let l = 1; l < layers.length; l++) place(layers[l], layers[l].map(it => it.up.length ? mean(it.up.map(u => u.x + u.w / 2)) - it.w / 2 : it.x));
+    for (let l = layers.length - 2; l >= 0; l--) place(layers[l], layers[l].map(it => it.down.length ? mean(it.down.map(c => c.x + c.w / 2)) - it.w / 2 : it.x));
+  }
+  const all = Object.values(items), minX = Math.min(...all.map(it => it.x));
+  all.forEach(it => it.x = Math.round(it.x - minX));
+  const top = it => it.d * (ST_H + ST_V), bot = it => top(it) + ST_H, cx = it => it.x + it.w / 2;
+  let d = '';
+  all.forEach(a => {
+    if (a.dummy) d += `M${cx(a)} ${top(a)}V${bot(a)}`;
+    a.down.forEach(b => { const ay = bot(a), by = top(b), mid = ay + ST_V / 2; d += `M${cx(a)} ${ay}V${mid}H${cx(b)}V${by}`; });
+  });
+  const cards = all.filter(it => !it.dummy).map(it => ({ n: nodes.find(x => x.id === it.id), x: it.x, y: top(it), root: !parents[it.id].length }));
+  return { cards, d, w: Math.max(...all.map(it => it.x + it.w)), h: cards.length ? Math.max(...all.map(it => it.d)) * (ST_H + ST_V) + ST_H : 0 };
+}
+function strLayout() {
+  const ids = new Set(S.struktur.map(x => x.id)), par = n => strPar(n).filter(p => ids.has(p));
+  return S.struktur.some(n => par(n).length > 1) ? layoutDag(par) : layoutTree(par);
 }
 function rStr() {
   const L = strLayout();
@@ -870,10 +940,10 @@ function attachFoto() {
 function detachFoto() { if (fotoOn && db) { db.ref('fotoStruktur').off(); fotoOn = false; } }
 function viewStr(id) {
   const n = S.struktur.find(x => x.id === id); if (!n) return;
-  const up = S.struktur.find(x => x.id === n.atasan), kids = strKids(n.id);
+  const ups = strPar(n).map(p => S.struktur.find(x => x.id === p)).filter(Boolean), kids = strKids(n.id);
   openOv(`<h3 style="justify-content:flex-end"><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-10px">${pfHtml(n.id, n.nama, 'big')}<b style="font-size:20px;font-family:Sora,sans-serif;text-align:center;word-break:break-word">${esc(n.nama)}</b><span style="background:color-mix(in srgb,var(--pri) 12%,transparent);color:var(--pt);font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase;padding:5px 14px;border-radius:14px;text-align:center;word-break:break-word">${esc(n.jabatan)}</span></div>
-  <div class="card" style="padding:14px;margin-top:16px"><small style="color:var(--mut)">Atasan</small><div style="font-weight:700;margin:2px 0 12px">${up ? esc(up.nama) + ' · ' + esc(up.jabatan) : '—'}</div><small style="color:var(--mut)">Bawahan</small><div style="font-weight:700;margin-top:2px">${kids.length ? kids.map(k => esc(k.nama)).join(', ') : '—'}</div></div>`);
+  <div class="card" style="padding:14px;margin-top:16px"><small style="color:var(--mut)">${ups.length > 1 ? 'Atasan (' + ups.length + ')' : 'Atasan'}</small><div style="font-weight:700;margin:2px 0 12px">${ups.length ? ups.map(u => esc(u.nama) + ' · ' + esc(u.jabatan)).join('<br>') : '—'}</div><small style="color:var(--mut)">Bawahan</small><div style="font-weight:700;margin-top:2px">${kids.length ? kids.map(k => esc(k.nama)).join(', ') : '—'}</div></div>`);
 }
 function openStr(id) { if (!isAdmin) return id ? viewStr(id) : null; strForm(id); }
 function drawPf() {
@@ -882,21 +952,29 @@ function drawPf() {
   w.innerHTML = pfHtml(strId, ($('sNama').value || ''), 'mid', strPend);
   $('sDelF').classList.toggle('hide', !okFoto(cur));
 }
+const strAtsSel = () => [...document.querySelectorAll('#sAts input[type=checkbox]:checked')].map(c => parseInt(c.value, 10));
+function atsInfo() {
+  const el = $('sAtsInfo'); if (!el) return;
+  const sel = strAtsSel().map(i => S.struktur.find(x => x.id === i)).filter(Boolean);
+  el.textContent = sel.length ? sel.length + ' atasan dipilih: ' + sel.map(x => x.nama).join(', ') : 'Tidak ada atasan dipilih: posisi ini menjadi yang paling atas.';
+}
 function strForm(id) {
   if (!isAdmin) return;
   const e = S.struktur.find(x => x.id === id) || null; strId = e ? e.id : 0; strPend = null;
-  const bad = new Set(e ? [e.id].concat(strDesc(e.id)) : []);
-  const opts = S.struktur.filter(x => !bad.has(x.id)).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(x => `<option value="${x.id}" ${e && e.atasan === x.id ? 'selected' : ''}>${esc(x.nama)} · ${esc(x.jabatan)}</option>`).join('');
+  const bad = new Set(e ? [e.id].concat(strDesc(e.id)) : []), cur = e ? strPar(e) : [];
+  const rows = S.struktur.filter(x => !bad.has(x.id)).sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+  const list = rows.length ? rows.map(x => `<label class="ci"><input type="checkbox" value="${x.id}" ${cur.includes(x.id) ? 'checked' : ''} onchange="atsInfo()"><span><b>${esc(x.nama)}</b> · ${esc(x.jabatan)}</span></label>`).join('') : '<div class="none">Belum ada posisi lain. Posisi ini akan menjadi yang paling atas.</div>';
   openOv(`<h3>${e ? 'Ubah posisi' : 'Tambah posisi'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px"><div class="sfph"><div id="sPfWrap">${pfHtml(strId, e ? e.nama : '', 'mid')}</div><span class="cam"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span></div>
     <div style="flex:1;display:grid;gap:4px;text-align:center"><button type="button" class="btn sec" style="padding:10px" onclick="$('sFile').click()">Pilih / ambil foto</button><button type="button" id="sDelF" class="lnk ${e && okFoto(S.foto[e.id]) ? '' : 'hide'}" onclick="strDelFoto()">Hapus foto</button></div>
     <input type="file" id="sFile" accept="image/*" class="hide" onchange="strPhoto(this)"></div>
   <label>Nama</label><input id="sNama" maxlength="60" value="${esc(e ? e.nama : '')}" placeholder="Nama lengkap" oninput="drawPf()">
   <label>Jabatan</label><input id="sJab" maxlength="60" value="${esc(e ? e.jabatan : '')}" placeholder="Contoh: Ketua, Bendahara, Seksi Acara">
-  <label>Atasan (melapor ke)</label><select id="sAts"><option value="0">Tidak ada (posisi paling atas)</option>${opts}</select>
-  ${e ? `<label>Urutan di antara posisi yang sejajar</label><div class="g2"><button class="btn sec" onclick="strMove(-1)">‹ Geser kiri</button><button class="btn sec" onclick="strMove(1)">Geser kanan ›</button></div>` : ''}
+  <label>Atasan (melapor ke): boleh pilih lebih dari satu</label><div id="sAts" class="chk">${list}</div>
+  <p id="sAtsInfo" style="color:var(--mut);font-size:12.5px;margin:6px 2px 0"></p>
+  ${e ? `<label>Urutan di antara posisi dengan atasan yang sama</label><div class="g2"><button class="btn sec" onclick="strMove(-1)">‹ Geser kiri</button><button class="btn sec" onclick="strMove(1)">Geser kanan ›</button></div>` : ''}
   <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveStr()">Simpan</button>${e ? '<button class="btn dng" onclick="delStr(' + e.id + ')">Hapus posisi</button>' : ''}</div>`);
-  if (e && e.atasan && !$('sAts').value) $('sAts').value = '0';
+  atsInfo();
 }
 async function fotoFromFile(file) {
   const bmp = window.createImageBitmap ? await createImageBitmap(file) : await new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => no(new Error('gambar')); im.src = u; });
@@ -921,12 +999,13 @@ async function strSaveFoto(id, data) {
 }
 async function saveStr() {
   if (!isAdmin) return;
-  const nama = $('sNama').value.trim(), jab = $('sJab').value.trim(), ats = parseInt($('sAts').value || '0', 10) || 0;
+  const nama = $('sNama').value.trim(), jab = $('sJab').value.trim(), ats = strAtsSel();
   if (!nama) return toast('Isi nama.'); if (!jab) return toast('Isi jabatan.');
   const old = S.struktur.find(x => x.id === strId);
-  if (ats && strId && (ats === strId || strDesc(strId).includes(ats))) return toast('Atasan tidak valid.');
-  const id = old ? old.id : Date.now(), sibs = S.struktur.filter(x => (x.atasan || 0) === ats && x.id !== id);
-  const urut = old && (old.atasan || 0) === ats ? (old.urut || 0) : sibs.reduce((m, x) => Math.max(m, x.urut || 0), -1) + 1;
+  if (strId && ats.some(a => a === strId || strDesc(strId).includes(a))) return toast('Atasan tidak valid.');
+  const id = old ? old.id : Date.now(), key = ats.slice().sort((a, b) => a - b).join(',');
+  const sibs = S.struktur.filter(x => strKey(x) === key && x.id !== id);
+  const urut = old && strKey(old) === key ? (old.urut || 0) : sibs.reduce((m, x) => Math.max(m, x.urut || 0), -1) + 1;
   const pos = { id, nama, jabatan: jab, atasan: ats, urut };
   S.struktur = old ? S.struktur.map(x => x.id === id ? pos : x) : S.struktur.concat(pos);
   save();
@@ -935,8 +1014,8 @@ async function saveStr() {
 }
 function strMove(dir) {
   const e = S.struktur.find(x => x.id === strId); if (!isAdmin || !e) return;
-  if ((parseInt($('sAts').value || '0', 10) || 0) !== (e.atasan || 0)) return toast('Simpan perubahan atasan dulu.');
-  const sibs = strKids(e.atasan || 0), i = sibs.findIndex(x => x.id === e.id), j = i + dir;
+  if (strAtsSel().slice().sort((a, b) => a - b).join(',') !== strKey(e)) return toast('Simpan perubahan atasan dulu.');
+  const sibs = S.struktur.filter(x => strKey(x) === strKey(e)).sort((a, b) => (a.urut || 0) - (b.urut || 0) || a.id - b.id), i = sibs.findIndex(x => x.id === e.id), j = i + dir;
   if (j < 0 || j >= sibs.length) return toast(dir < 0 ? 'Sudah paling kiri.' : 'Sudah paling kanan.');
   [sibs[i], sibs[j]] = [sibs[j], sibs[i]];
   const pos = {}; sibs.forEach((s, k) => pos[s.id] = k);
@@ -946,10 +1025,13 @@ function strMove(dir) {
 async function delStr(id) {
   const x = S.struktur.find(v => v.id === id);
   if (!isAdmin || !x || !confirm('Hapus posisi ' + x.nama + '? Bawahannya akan naik ke atasan posisi ini.')) return;
-  const up = x.atasan || 0, kids = strKids(id), order = [];
-  strKids(up).forEach(s => { if (s.id === id) kids.forEach(k => order.push(k.id)); else order.push(s.id); });
-  S.struktur = S.struktur.filter(v => v.id !== id).map(v => { const i = order.indexOf(v.id); return i < 0 ? v : Object.assign({}, v, { atasan: up, urut: i }); });
-  save(); await strSaveFoto(id, ''); closeOv(); render(); toast('Posisi dihapus');
+  const ups = strPar(x), kids = strKids(id).map(k => k.id);
+  S.struktur = S.struktur.filter(v => v.id !== id).map(v => {
+    if (!kids.includes(v.id)) return v;
+    const np = [...new Set(strPar(v).filter(p => p !== id).concat(ups))];
+    return Object.assign({}, v, { atasan: np, urut: (x.urut || 0) + (kids.indexOf(v.id) + 1) / (kids.length + 1) * .5 });
+  });
+  strRenumber(); save(); await strSaveFoto(id, ''); closeOv(); render(); toast('Posisi dihapus');
 }
 function openPeriode() {
   if (!isAdmin) return;
