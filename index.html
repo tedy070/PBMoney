@@ -164,7 +164,7 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .rtb button.on{background:var(--pri);color:#fff}
 .rte{font-size:16px;min-height:170px;max-height:44vh;overflow:auto;padding:12px;border:1.5px solid var(--ln);border-radius:0 0 12px 12px;background:var(--sf);outline:none;line-height:1.6;word-break:break-word;box-shadow:inset 0 1px 3px var(--insh)}
 .rte:focus{border-color:var(--pri)}.rte:empty:before{content:attr(data-ph);color:#8a96b0;pointer-events:none}
-#mAmt[readonly]{background:var(--sf2);color:var(--mut);cursor:not-allowed}
+#mAmt[readonly],#eCost[readonly]{background:var(--sf2);color:var(--mut);cursor:not-allowed}
 .mc small.ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rt code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--sf2);padding:1px 5px;border-radius:5px;font-size:.92em}
 .pf{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none;font-family:Sora,sans-serif;font-weight:700;font-size:19px;box-shadow:0 0 0 2.5px #fff,0 0 0 3.5px rgba(16,32,74,.14)}
@@ -189,6 +189,17 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .ci:active{background:var(--sf2)}.ci span{flex:1;min-width:0;word-break:break-word}
 .ci input[type=checkbox]{width:22px;height:22px;padding:0;border-radius:6px;flex:none;box-shadow:none;accent-color:var(--pri)}
 .chk .none{padding:12px 10px;color:var(--mut);font-size:13px}
+.sw{position:relative;width:48px;height:28px;border-radius:14px;background:var(--ln);flex:none;padding:0;transition:background .2s;box-shadow:inset 0 1px 3px var(--insh)}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.28);transition:transform .2s}
+.sw.on{background:var(--pri)}.sw.on i{transform:translateX(20px)}
+.swr{display:flex;align-items:center;gap:12px;margin-top:10px}.swr span{font-weight:600;font-size:14px}
+.ri{background:var(--sf2);border-radius:14px;padding:10px;margin-top:10px}
+.ri .r1{display:flex;gap:8px}.ri .r1 input{flex:1;min-width:0}
+.ri .r1 .x{width:44px;border-radius:10px;background:var(--sf);color:var(--out);font-size:22px;line-height:1;flex:none}
+.ri .r2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,.9fr);gap:8px;margin-top:6px}
+.ri label{margin:6px 0 3px;font-size:11.5px}
+.ri .r3{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--mut)}.ri .r3 b{color:var(--ink);font-family:Sora,sans-serif}
+.rsum{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--pri) 10%,transparent);font-weight:600}.rsum b{font-family:Sora,sans-serif;color:var(--pt)}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
 #toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
@@ -615,10 +626,51 @@ function rEvt() {
 function viewEvt(id) {
   const e = S.events.find(x => x.id === id); if (!e) return;
   const row = (l, v) => v ? `<div class="tx" style="cursor:default"><div class="m"><small>${l}</small><b style="white-space:normal">${esc(v)}</b></div></div>` : '';
-  openOv(`<h3>Detail kegiatan<button onclick="closeOv()" aria-label="Tutup">×</button></h3><div class="card">${row('Kegiatan', e.name)}${row('Tanggal', WD[new Date(e.date + 'T00:00:00').getDay()] + ', ' + fmtDate(e.date))}${row('Waktu', e.time)}${row('Lokasi', e.place)}${row('Perkiraan biaya', e.cost ? rp(e.cost) : '')}${row('Status', e.done ? 'Selesai' : evUp(e) ? 'Akan datang' : 'Sudah lewat')}${row('Catatan', e.note)}</div>`);
+  openOv(`<h3>Detail kegiatan<button onclick="closeOv()" aria-label="Tutup">×</button></h3><div class="card">${row('Kegiatan', e.name)}${row('Tanggal', WD[new Date(e.date + 'T00:00:00').getDay()] + ', ' + fmtDate(e.date))}${row('Waktu', e.time)}${row('Lokasi', e.place)}${row('Perkiraan biaya', e.cost ? rp(e.cost) + (e.rinci ? ' (dari rincian)' : '') : '')}${row('Status', e.done ? 'Selesai' : evUp(e) ? 'Akan datang' : 'Sudah lewat')}${row('Catatan', e.note)}</div>${rinciView(e)}`);
+}
+let evItems = [], evRinci = false, evManual = '';
+const newItem = () => ({ nama: '', harga: 0, qty: 1, unit: 'pcs' });
+const itTotal = it => (it.harga || 0) * (it.qty || 0);
+const itSum = () => evItems.reduce((a, it) => a + itTotal(it), 0);
+function drawRinci() {
+  const box = $('eItems'); if (!box) return;
+  box.innerHTML = evItems.map((it, i) => `<div class="ri"><div class="r1"><input maxlength="60" placeholder="Nama barang" value="${esc(it.nama)}" oninput="itemSet(${i},'nama',this.value)"><button type="button" class="x" onclick="itemDel(${i})" aria-label="Hapus barang">×</button></div>
+    <div class="r2"><div><label>Harga (Rp)</label><input inputmode="numeric" placeholder="0" value="${it.harga ? it.harga.toLocaleString('id-ID') : ''}" oninput="fmtAmt(this);itemSet(${i},'harga',this.value)"></div><div><label>Jumlah</label><input inputmode="numeric" maxlength="6" value="${it.qty || ''}" oninput="itemSet(${i},'qty',this.value)"></div><div><label>Satuan</label><select onchange="itemSet(${i},'unit',this.value)"><option ${it.unit !== 'set' ? 'selected' : ''}>pcs</option><option ${it.unit === 'set' ? 'selected' : ''}>set</option></select></div></div>
+    <div class="r3"><span>Total harga</span><b id="itT${i}">${rp(itTotal(it))}</b></div></div>`).join('');
+}
+// Tombol ON: perkiraan biaya diisi manual (tampilan biasa). Tombol OFF: kolom terkunci dan otomatis berisi total dari rincian barang.
+function evSync() {
+  const c = $('eCost'); if (!c) return;
+  const sw = $('eSw'); sw.classList.toggle('on', !evRinci); sw.setAttribute('aria-checked', String(!evRinci));
+  $('eSwTxt').textContent = evRinci ? 'Dihitung dari rincian' : 'Isi manual';
+  $('eSwHint').textContent = evRinci ? 'Perkiraan biaya terkunci dan dijumlah otomatis dari rincian barang di bawah.' : 'Matikan tombol ini untuk menghitung dari rincian barang.';
+  $('eRinci').classList.toggle('hide', !evRinci); c.readOnly = evRinci;
+  if (evRinci) { c.value = itSum().toLocaleString('id-ID'); $('rTot').textContent = rp(itSum()); }
+}
+function evToggle() {
+  const c = $('eCost');
+  if (!evRinci) { evManual = c.value; evRinci = true; if (!evItems.length) evItems.push(newItem()); }
+  else { evRinci = false; c.value = evManual; }
+  drawRinci(); evSync();
+}
+function itemSet(i, k, v) {
+  const it = evItems[i]; if (!it) return;
+  if (k === 'nama') it.nama = v; else if (k === 'unit') it.unit = v === 'set' ? 'set' : 'pcs'; else it[k] = parseInt(String(v).replace(/\D/g, '') || '0', 10);
+  const tt = $('itT' + i); if (tt) tt.textContent = rp(itTotal(it)); evSync();
+}
+function itemAdd() { evItems.push(newItem()); drawRinci(); evSync(); const ins = document.querySelectorAll('#eItems .r1 input'); if (ins.length) ins[ins.length - 1].focus(); }
+function itemDel(i) { evItems.splice(i, 1); drawRinci(); evSync(); }
+function rinciView(e) {
+  const its = toArr(e.items); if (!e.rinci || !its.length) return '';
+  return `<div class="sec-t" style="margin:14px 0 6px"><h3>Rincian biaya</h3></div><div class="card">${its.map(it => `<div class="tx" style="cursor:default"><div class="m"><b style="white-space:normal">${esc(it.nama)}</b><small>${esc(it.qty)} ${esc(it.unit)} × ${rp(it.harga)}</small></div><div class="a">${rp(it.harga * it.qty)}</div></div>`).join('')}<div class="tx" style="cursor:default"><div class="m"><b>Total</b></div><div class="a" style="color:var(--pt)">${rp(e.cost)}</div></div></div>`;
 }
 function openEvt(id) {
   if (!isAdmin) return id ? viewEvt(id) : null;
+  openEvt0(id);
+  const e0 = S.events.find(x => x.id === id) || null;
+  evRinci = !!(e0 && e0.rinci); evItems = e0 ? toArr(e0.items).map(it => Object.assign({}, it)) : []; evManual = ''; drawRinci(); evSync();
+}
+function openEvt0(id) {
   const e = S.events.find(x => x.id === id) || null; evId = e ? e.id : 0;
   const v = e || { name: '', date: today(), time: '', place: '', cost: 0, note: '', done: false };
   openOv(`<h3>${e ? 'Ubah kegiatan' : 'Tambah kegiatan'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
@@ -626,6 +678,9 @@ function openEvt(id) {
   <div class="g2"><div><label>Tanggal</label><input id="eDate" type="date" value="${v.date}"></div><div><label>Waktu (opsional)</label><input id="eTime" type="time" value="${esc(v.time)}"></div></div>
   <label>Lokasi (opsional)</label><input id="ePlace" value="${esc(v.place)}" placeholder="Tempat pelaksanaan">
   <label>Perkiraan biaya (Rp, opsional)</label><input id="eCost" inputmode="numeric" placeholder="0" value="${v.cost ? v.cost.toLocaleString('id-ID') : ''}" oninput="fmtAmt(this)">
+  <div class="swr"><button type="button" id="eSw" class="sw on" role="switch" aria-checked="true" aria-label="Isi perkiraan biaya manual" onclick="evToggle()"><i></i></button><span id="eSwTxt">Isi manual</span></div>
+  <p id="eSwHint" style="color:var(--mut);font-size:12.5px;margin:6px 2px 0"></p>
+  <div id="eRinci" class="hide"><div class="sec-t" style="margin:14px 0 2px"><h3>Rincian biaya</h3></div><div id="eItems"></div><button type="button" class="btn sec" style="margin-top:10px" onclick="itemAdd()">+ Tambah barang</button><div class="rsum"><span>Total rincian</span><b id="rTot">Rp 0</b></div></div>
   <label>Catatan</label><textarea id="eNote" rows="3" placeholder="Agenda, penanggung jawab, perlengkapan…">${esc(v.note)}</textarea>
   <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveEvt()">Simpan</button>${e ? `<button class="btn sec" onclick="doneEvt()">${e.done ? 'Batalkan tanda selesai' : 'Tandai selesai'}</button><button class="btn dng" onclick="delEvt()">Hapus kegiatan</button>` : ''}</div>`);
 }
@@ -634,7 +689,15 @@ function saveEvt() {
   const name = $('eName').value.trim(), date = $('eDate').value;
   if (!name) return toast('Isi nama kegiatan.'); if (!date) return toast('Pilih tanggal kegiatan.');
   const old = S.events.find(x => x.id === evId);
-  const e = { id: old ? old.id : Date.now(), name, date, time: $('eTime').value, place: $('ePlace').value.trim(), cost: parseInt(($('eCost').value || '').replace(/\D/g, '') || '0', 10), note: $('eNote').value.trim(), done: old ? !!old.done : false };
+  let cost, items = null;
+  if (evRinci) {
+    items = evItems.filter(it => (it.nama || '').trim() || it.harga).map(it => ({ nama: (it.nama || '').trim(), harga: it.harga || 0, qty: it.qty || 0, unit: it.unit === 'set' ? 'set' : 'pcs' }));
+    if (!items.length) return toast('Isi minimal satu barang di rincian.');
+    if (items.some(it => !it.nama)) return toast('Isi nama barang.');
+    if (items.some(it => it.qty < 1)) return toast('Jumlah barang minimal 1.');
+    cost = items.reduce((a, it) => a + it.harga * it.qty, 0);
+  } else cost = parseInt(($('eCost').value || '').replace(/\D/g, '') || '0', 10);
+  const e = Object.assign({ id: old ? old.id : Date.now(), name, date, time: $('eTime').value, place: $('ePlace').value.trim(), cost, note: $('eNote').value.trim(), done: old ? !!old.done : false }, evRinci ? { rinci: true, items } : {});
   S.events = old ? S.events.map(x => x.id === e.id ? e : x) : S.events.concat(e);
   save(); closeOv(); render(); toast('Kegiatan tersimpan');
 }
@@ -1063,7 +1126,7 @@ function hisList() {
 }
 function rHis() {
   const keys = [...new Set(S.tx.map(x => x.date.slice(0, 7)).concat(ym(new Date())))].sort().reverse();
-  $('v-his').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('home')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Riwayat</h2></div><button class="btn sec" style="width:auto;padding:8px 14px;font-size:13px" onclick="exportCsv()">Unduh CSV</button></div>
+  $('v-his').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('home')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Riwayat</h2></div><button class="btn sec" style="width:auto;padding:8px 14px;font-size:13px" onclick="exportPdf()">Unduh PDF</button></div>
   <input id="hq" placeholder="Cari catatan, pihak, no. bukti…" value="${esc(his.q)}" oninput="his.q=this.value;hisBody()">
   <div class="flt"><select onchange="his.m=this.value;hisBody()"><option value="">Semua bulan</option>${keys.map(k => `<option value="${k}" ${k === his.m ? 'selected' : ''}>${monLabel(k)}</option>`).join('')}</select>
   <select onchange="his.t=this.value;hisBody()"><option value="">Masuk &amp; keluar</option><option value="in" ${his.t === 'in' ? 'selected' : ''}>Kas masuk</option><option value="out" ${his.t === 'out' ? 'selected' : ''}>Kas keluar</option></select></div>
@@ -1075,10 +1138,80 @@ function hisBody() {
   $('hisBody').innerHTML = `<div class="sum" style="margin:0 0 10px"><div><small>Masuk</small><b style="color:var(--in)">${rp(sum(l, 'in'))}</b></div><div><small>Keluar</small><b style="color:var(--out)">${rp(sum(l, 'out'))}</b></div></div>
   <div class="card">${l.length ? l.map(txRow).join('') : '<div class="empty">Tidak ada transaksi yang cocok.</div>'}</div>`;
 }
-function exportCsv() {
-  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const rows = [['Tanggal', 'Jenis', 'Kategori', 'Jumlah', 'Pihak', 'Metode', 'No. Bukti', 'Catatan']].concat(hisList().map(x => [x.date, x.type === 'in' ? 'Masuk' : 'Keluar', x.cat, x.amt, x.party, x.method, x.ref, x.note]));
-  dl('pbmoney-kas.csv', '\ufeff' + rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
+// ── PDF tanpa pustaka: tabel riwayat (A4 lanskap, huruf Helvetica, tabel berlanjut antarhalaman dengan judul kolom berulang) ──
+const HV = [].concat([278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278], Array(10).fill(556), [278, 278, 584, 584, 584, 556, 1015], [667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611], [278, 278, 278, 469, 556, 333], [556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500], [334, 260, 334, 584]);
+const HB = [].concat([278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278], Array(10).fill(556), [333, 333, 584, 584, 584, 611, 975], [722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611], [333, 278, 333, 584, 556, 333], [556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500], [389, 280, 389, 584]);
+const cw = (ch, b) => { const c = ch.charCodeAt(0); return c >= 32 && c <= 126 ? (b ? HB : HV)[c - 32] : 556; };
+const toWin = s => String(s == null ? '' : s).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '?').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014\u2212]/g, '-').replace(/[\u2022\u00B7]/g, '-').replace(/\s+/g, ' ').replace(/[^\x20-\x7E\xA1-\xFF]/g, '?');
+const pdfStr = s => { let o = ''; for (const ch of toWin(s)) { const c = ch.charCodeAt(0); o += (ch === '(' || ch === ')' || ch === '\\') ? '\\' + ch : c > 126 ? '\\' + c.toString(8).padStart(3, '0') : ch; } return o; };
+function pdfWrap(s, bold, size, maxW) {
+  const w = x => [...x].reduce((a, ch) => a + cw(ch, bold), 0) * size / 1000, lines = []; let cur = '';
+  for (let word of toWin(s).split(' ').filter(Boolean)) {
+    while (w(word) > maxW) { let k = 1; while (k < word.length && w(word.slice(0, k + 1)) <= maxW) k++; if (cur) { lines.push(cur); cur = ''; } lines.push(word.slice(0, k)); word = word.slice(k); }
+    const tt = cur ? cur + ' ' + word : word;
+    if (w(tt) <= maxW) cur = tt; else { if (cur) lines.push(cur); cur = word; }
+  }
+  if (cur) lines.push(cur); return lines.length ? lines : [''];
+}
+function buildPdf(list, meta) {
+  const PW = 841.89, PH = 595.28, M = 36, TW = 769, LH = 10.5, FS = 8.5, PAD = 4, FOOT = 30, MAXL = 6, HH = 18;
+  const COLS = [{ t: 'Tanggal', w: 64 }, { t: 'Jenis', w: 48 }, { t: 'Kategori', w: 100 }, { t: 'Pihak', w: 120 }, { t: 'Metode', w: 54 }, { t: 'No. Bukti', w: 72 }, { t: 'Catatan', w: 221 }, { t: 'Jumlah', w: 90, r: true }];
+  const C = { pri: [.122, .333, .839], ink: [.059, .106, .176], mut: [.345, .392, .502], in: [.051, .388, .753], out: [.784, .125, .18], zebra: [.957, .969, .992], line: [.882, .902, .941], white: [1, 1, 1], box: [.914, .941, 1] };
+  const col = c => c.map(v => +v.toFixed(3)).join(' '), f = n => String(+n.toFixed(2));
+  const tw = (s, b, sz) => [...toWin(s)].reduce((a, ch) => a + cw(ch, b), 0) * sz / 1000;
+  const pages = []; let ops = [], top = 0;
+  const newPage = () => { ops = []; pages.push(ops); };
+  const rect = (x, tp, w, h, c) => ops.push(`${col(c)} rg ${f(x)} ${f(PH - tp - h)} ${f(w)} ${f(h)} re f`);
+  const hline = (x1, x2, tp, c) => ops.push(`0.5 w ${col(c)} RG ${f(x1)} ${f(PH - tp)} m ${f(x2)} ${f(PH - tp)} l S`);
+  const txt = (x, tp, s, bold, sz, c) => ops.push(`BT /F${bold ? 2 : 1} ${sz} Tf ${col(c)} rg ${f(x)} ${f(PH - tp)} Td (${pdfStr(s)}) Tj ET`);
+  const ellip = (s, w) => { while (s.length && tw(s + '...', false, FS) > w) s = s.slice(0, -1); return s + '...'; };
+  const tin = list.filter(x => x.type === 'in').reduce((a, x) => a + x.amt, 0), tout = list.filter(x => x.type === 'out').reduce((a, x) => a + x.amt, 0);
+  let tableTop = 0;
+  const head = first => {
+    rect(0, 0, PW, 6, C.pri);
+    if (first) {
+      txt(M, M + 16, 'PBMoney', true, 20, C.pri); const x2 = M + tw('PBMoney', true, 20) + 12;
+      txt(x2, M + 16, 'Riwayat Transaksi Buku Kas', true, 11, C.ink); txt(PW - M - tw(meta.printed, false, 8.5), M + 14, meta.printed, false, 8.5, C.mut);
+      meta.lines.forEach((l, i) => txt(M, M + 36 + i * 12, l, false, 9, C.mut));
+      const bt = M + 36 + meta.lines.length * 12 + 6, bw = (TW - 20) / 3;
+      [['Total kas masuk', tin, C.in], ['Total kas keluar', tout, C.out], ['Selisih (masuk - keluar)', tin - tout, tin - tout < 0 ? C.out : C.ink]].forEach(([l, v, c], i) => {
+        const bx = M + i * (bw + 10); rect(bx, bt, bw, 42, C.box); txt(bx + 10, bt + 15, l, false, 8.5, C.mut); txt(bx + 10, bt + 34, (v < 0 ? '- ' : '') + rp(Math.abs(v)), true, 13, c);
+      });
+      tableTop = bt + 42 + 14;
+    } else { txt(M, M + 14, 'PBMoney - Riwayat Transaksi', true, 10, C.pri); txt(PW - M - tw(meta.lines[0], false, 8.5), M + 14, meta.lines[0], false, 8.5, C.mut); tableTop = M + 28; }
+  };
+  const th = () => { rect(M, top, TW, HH, C.pri); let x = M; COLS.forEach(c => { txt(c.r ? x + c.w - 6 - tw(c.t, true, FS) : x + 6, top + 12.5, c.t, true, FS, C.white); x += c.w; }); top += HH; };
+  newPage(); head(true); top = tableTop; th();
+  list.forEach((x, ri) => {
+    const cells = [fmtDate(x.date), x.type === 'in' ? 'Masuk' : 'Keluar', x.cat, x.party || '-', x.method || '-', x.ref || '-', x.note || '-', rp(x.amt)];
+    const wr = cells.map((s, i) => { let L = pdfWrap(s, false, FS, COLS[i].w - 12); if (L.length > MAXL) { L = L.slice(0, MAXL); L[MAXL - 1] = ellip(L[MAXL - 1], COLS[i].w - 12); } return L; });
+    const rh = Math.max(...wr.map(l => l.length)) * LH + PAD * 2;
+    if (top + rh > PH - M - FOOT) { newPage(); head(false); top = tableTop; th(); }
+    if (ri % 2) rect(M, top, TW, rh, C.zebra);
+    let x0 = M;
+    wr.forEach((L, i) => { const c = COLS[i], b = i === 1 || i === 7, cc = b ? (x.type === 'in' ? C.in : C.out) : C.ink; L.forEach((s, k) => txt(c.r ? x0 + c.w - 6 - tw(s, b, FS) : x0 + 6, top + PAD + 7.2 + k * LH, s, b, FS, cc)); x0 += c.w; });
+    hline(M, M + TW, top + rh, C.line); top += rh;
+  });
+  const N = pages.length;
+  pages.forEach((pg, i) => { ops = pg; txt(M, PH - 18, 'PBMoney - Buku Kas Paguyuban', false, 8, C.mut); const s = 'Halaman ' + (i + 1) + ' dari ' + N; txt(PW - M - tw(s, false, 8), PH - 18, s, false, 8, C.mut); });
+  const objs = ['<< /Type /Catalog /Pages 2 0 R >>', `<< /Type /Pages /Kids [${pages.map((_, i) => (5 + 2 * i) + ' 0 R').join(' ')}] /Count ${N} >>`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+  pages.forEach((pg, i) => { const body = pg.join('\n'); objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`); objs.push(`<< /Length ${body.length} >>\nstream\n${body}\nendstream`); });
+  const nw = new Date(), z = n => String(n).padStart(2, '0');
+  objs.push(`<< /Title (PBMoney - Riwayat Transaksi) /Producer (PBMoney) /CreationDate (D:${nw.getFullYear()}${z(nw.getMonth() + 1)}${z(nw.getDate())}${z(nw.getHours())}${z(nw.getMinutes())}${z(nw.getSeconds())}) >>`);
+  let out = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const off = [];
+  objs.forEach((b, i) => { off.push(out.length); out += `${i + 1} 0 obj\n${b}\nendobj\n`; });
+  const xr = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + off.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R /Info ${objs.length} 0 R >>\nstartxref\n${xr}\n%%EOF`;
+  const u = new Uint8Array(out.length); for (let i = 0; i < out.length; i++) u[i] = out.charCodeAt(i) & 255; return u;
+}
+function dlBlob(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+function exportPdf() {
+  const l = hisList(); if (!l.length) return toast('Tidak ada transaksi untuk diunduh.');
+  const lines = ['Periode: ' + (his.m ? monLabel(his.m) : 'Semua bulan'), 'Jenis: ' + (his.t === 'in' ? 'Kas masuk' : his.t === 'out' ? 'Kas keluar' : 'Kas masuk & keluar')];
+  if (his.q.trim()) lines.push('Pencarian: "' + his.q.trim() + '"');
+  lines.push('Jumlah transaksi: ' + l.length);
+  try { dlBlob('pbmoney-riwayat-' + (his.m || 'semua-bulan') + '.pdf', new Blob([buildPdf(l, { lines, printed: 'Dicetak: ' + fmtDate(today()) })], { type: 'application/pdf' })); toast('PDF diunduh'); }
+  catch (e) { toast('Gagal membuat PDF.'); }
 }
 function dl(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }
 
@@ -1102,7 +1235,7 @@ function drawTx() {
   openOv(`<h3>${ed.id ? 'Ubah transaksi' : 'Catat kas'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <div class="seg"><button class="out ${ed.type === 'out' ? 'on' : ''}" onclick="setType('out')">Kas keluar</button><button class="in ${ed.type === 'in' ? 'on' : ''}" onclick="setType('in')">Kas masuk</button></div>
   <label>Jumlah (Rp)</label><div style="display:flex;gap:8px"><input id="fAmt" class="amt" inputmode="numeric" placeholder="0" value="${ed.amt ? ed.amt.toLocaleString('id-ID') : ''}" oninput="fmtAmt(this)"><button class="btn sec" style="width:56px;padding:0" onclick="openCalc()" aria-label="Kalkulator">±</button></div>
-  <div class="g2"><div><label>Tanggal</label><input id="fDate" type="date" value="${ed.date}"></div><div><label>Kategori</label><select id="fCat">${c.map(k => `<option ${k === ed.cat ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></div></div>
+  <div class="g2"><div><label>Tanggal</label><input id="fDate" type="date" value="${ed.date}"></div><div><label>Kategori</label><select id="fCat" onchange="catChg()">${c.map(k => `<option ${k === ed.cat ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></div></div>
   <label>${ed.type === 'in' ? 'Diterima dari' : 'Dibayarkan kepada'}</label>${ed.type === 'in' ? `<div class="sgw"><input id="fParty" value="${esc(ed.party)}" placeholder="Ketik atau pilih nama anggota" autocomplete="off" onfocus="showSg()" oninput="showSg()" onblur="setTimeout(hideSg,180)"><div id="sg" class="sg hide"></div></div>` : `<input id="fParty" value="${esc(ed.party)}" placeholder="Nama orang atau pihak">`}
   <div class="g2"><div><label>Metode</label><select id="fMeth">${METHODS.map(k => `<option ${k === ed.method ? 'selected' : ''}>${k}</option>`).join('')}</select></div><div><label>No. bukti</label><input id="fRef" value="${esc(ed.ref)}" placeholder="Opsional"></div></div>
   <label>Catatan</label><textarea id="fNote" rows="2" placeholder="Keterangan transaksi">${esc(ed.note)}</textarea>
@@ -1113,14 +1246,21 @@ function showSg() {
   const q = $('fParty').value.trim().toLowerCase();
   const ms = S.members.slice().sort((a, b) => a.name.localeCompare(b.name, 'id')).filter(m => !q || m.name.toLowerCase().includes(q));
   if (!ms.length) { if (!S.members.length && !q) { box.innerHTML = '<div class="hint">Belum ada anggota. Tambahkan di tab Paguyuban, atau ketik nama bebas.</div>'; box.classList.remove('hide'); } else box.classList.add('hide'); return; }
-  box.innerHTML = ms.map(m => `<div onmousedown="event.preventDefault()" onclick="pickSg(${m.id})"><b>${esc(m.name)}</b><small>${rp(m.amt)}</small></div>`).join('');
+  const iu = isIuran();   // nominal iuran hanya ditampilkan untuk kategori "Iuran anggota"; kategori lain hanya nama
+  box.innerHTML = ms.map(m => `<div onmousedown="event.preventDefault()" onclick="pickSg(${m.id})"><b>${esc(m.name)}</b>${iu ? `<small>${rp(m.amt)}</small>` : ''}</div>`).join('');
   box.classList.remove('hide');
 }
 function hideSg() { const b = $('sg'); if (b) b.classList.add('hide'); }
+const isIuran = () => !!$('fCat') && $('fCat').value === 'Iuran anggota';
 function pickSg(id) {
   const m = S.members.find(x => x.id === id); if (!m) return;
-  $('fParty').value = m.name; hideSg(); if ($('fCat')) $('fCat').value = 'Iuran anggota';
-  if (!$('fAmt').value) { $('fAmt').value = m.amt.toLocaleString('id-ID'); }
+  $('fParty').value = m.name; hideSg();
+  if (isIuran() && !$('fAmt').value) $('fAmt').value = m.amt.toLocaleString('id-ID');   // kategori lain: hanya nama, nominal tidak diisi
+}
+// Mengganti kategori ke Iuran anggota saat nama anggota sudah terisi dan jumlah masih kosong -> nominal terisi otomatis.
+function catChg() {
+  if (isIuran() && ed.type === 'in' && !$('fAmt').value) { const m = S.members.find(x => sameName(x.name, $('fParty').value)); if (m) $('fAmt').value = m.amt.toLocaleString('id-ID'); }
+  const b = $('sg'); if (b && !b.classList.contains('hide')) showSg();
 }
 function readForm() { ed.amt = parseInt(($('fAmt').value || '').replace(/\D/g, '') || '0', 10); ed.date = $('fDate').value; ed.cat = $('fCat').value; ed.party = $('fParty').value.trim(); ed.method = $('fMeth').value; ed.ref = $('fRef').value.trim(); ed.note = $('fNote').value.trim(); }
 function setType(t) { readForm(); ed.type = t; drawTx(); }
