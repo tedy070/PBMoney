@@ -1141,6 +1141,12 @@ function hisBody() {
 // ── PDF tanpa pustaka: tabel riwayat (A4 lanskap, huruf Helvetica, tabel berlanjut antarhalaman dengan judul kolom berulang) ──
 const HV = [].concat([278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278], Array(10).fill(556), [278, 278, 584, 584, 584, 556, 1015], [667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611], [278, 278, 278, 469, 556, 333], [556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500], [334, 260, 334, 584]);
 const HB = [].concat([278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278], Array(10).fill(556), [333, 333, 584, 584, 584, 611, 975], [722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611], [333, 278, 333, 584, 556, 333], [556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500], [389, 280, 389, 584]);
+// Warna kategori kas masuk di PDF: [garis, latar, teks]. Urutan mengikuti daftar kategori kas masuk (empat bawaan lebih dulu, lalu kategori kustom).
+const CAT_PAL = ['#2563eb|#dbeafe|#1e40af', '#16a34a|#dcfce7|#166534', '#ea580c|#ffedd5|#9a3412', '#7c3aed|#ede9fe|#5b21b6', '#0d9488|#ccfbf1|#115e59', '#db2777|#fce7f3|#9d174d', '#ca8a04|#fef9c3|#854d0e', '#0891b2|#cffafe|#155e75', '#65a30d|#ecfccb|#3f6212', '#475569|#e2e8f0|#1e293b']
+  .map(s => s.split('|').map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)));
+function catPal(c) { let i = cats('in').indexOf(c); if (i < 0) { i = 0; for (const ch of String(c)) i = (i * 31 + ch.charCodeAt(0)) % 997; i += 4; } return CAT_PAL[i % CAT_PAL.length]; }
+// Blok tanda tangan di bagian bawah PDF (kiri dan kanan). Ubah teks di sini bila pengurus berganti.
+const TTD = [{ sapa: 'Mengetahui,', jabatan: 'Bendahara I', nama: 'Tedi Zakaria' }, { sapa: 'Hormat kami,', jabatan: 'Ketua Paguyuban', nama: 'Abdulloh Mubarok' }];
 const cw = (ch, b) => { const c = ch.charCodeAt(0); return c >= 32 && c <= 126 ? (b ? HB : HV)[c - 32] : 556; };
 const toWin = s => String(s == null ? '' : s).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '?').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014\u2212]/g, '-').replace(/[\u2022\u00B7]/g, '-').replace(/\s+/g, ' ').replace(/[^\x20-\x7E\xA1-\xFF]/g, '?');
 const pdfStr = s => { let o = ''; for (const ch of toWin(s)) { const c = ch.charCodeAt(0); o += (ch === '(' || ch === ')' || ch === '\\') ? '\\' + ch : c > 126 ? '\\' + c.toString(8).padStart(3, '0') : ch; } return o; };
@@ -1166,6 +1172,8 @@ function buildPdf(list, meta) {
   const txt = (x, tp, s, bold, sz, c) => ops.push(`BT /F${bold ? 2 : 1} ${sz} Tf ${col(c)} rg ${f(x)} ${f(PH - tp)} Td (${pdfStr(s)}) Tj ET`);
   const ellip = (s, w) => { while (s.length && tw(s + '...', false, FS) > w) s = s.slice(0, -1); return s + '...'; };
   const tin = list.filter(x => x.type === 'in').reduce((a, x) => a + x.amt, 0), tout = list.filter(x => x.type === 'out').reduce((a, x) => a + x.amt, 0);
+  const inSet = new Set(list.filter(x => x.type === 'in').map(x => x.cat)), inOrder = cats('in').filter(c => inSet.has(c));
+  const inCats = inOrder.concat([...inSet].filter(c => !inOrder.includes(c)));
   let tableTop = 0;
   const head = first => {
     rect(0, 0, PW, 6, C.pri);
@@ -1177,7 +1185,13 @@ function buildPdf(list, meta) {
       [['Total kas masuk', tin, C.in], ['Total kas keluar', tout, C.out], ['Selisih (masuk - keluar)', tin - tout, tin - tout < 0 ? C.out : C.ink]].forEach(([l, v, c], i) => {
         const bx = M + i * (bw + 10); rect(bx, bt, bw, 42, C.box); txt(bx + 10, bt + 15, l, false, 8.5, C.mut); txt(bx + 10, bt + 34, (v < 0 ? '- ' : '') + rp(Math.abs(v)), true, 13, c);
       });
-      tableTop = bt + 42 + 14;
+      let ly = bt + 42 + 12;
+      if (inCats.length) {
+        let lx = M; txt(lx, ly + 7.2, 'Kategori kas masuk:', true, 8.5, C.mut); lx += tw('Kategori kas masuk:', true, 8.5) + 10;
+        inCats.forEach(c => { const wd = 12 + tw(c, false, 8.5) + 16; if (lx + wd > M + TW) { lx = M; ly += 13; } rect(lx, ly, 8, 8, catPal(c)[0]); txt(lx + 12, ly + 7.2, c, false, 8.5, C.ink); lx += wd; });
+        ly += 13;
+      }
+      tableTop = ly + 4;
     } else { txt(M, M + 14, 'PBMoney - Riwayat Transaksi', true, 10, C.pri); txt(PW - M - tw(meta.lines[0], false, 8.5), M + 14, meta.lines[0], false, 8.5, C.mut); tableTop = M + 28; }
   };
   const th = () => { rect(M, top, TW, HH, C.pri); let x = M; COLS.forEach(c => { txt(c.r ? x + c.w - 6 - tw(c.t, true, FS) : x + 6, top + 12.5, c.t, true, FS, C.white); x += c.w; }); top += HH; };
@@ -1189,9 +1203,18 @@ function buildPdf(list, meta) {
     if (top + rh > PH - M - FOOT) { newPage(); head(false); top = tableTop; th(); }
     if (ri % 2) rect(M, top, TW, rh, C.zebra);
     let x0 = M;
-    wr.forEach((L, i) => { const c = COLS[i], b = i === 1 || i === 7, cc = b ? (x.type === 'in' ? C.in : C.out) : C.ink; L.forEach((s, k) => txt(c.r ? x0 + c.w - 6 - tw(s, b, FS) : x0 + 6, top + PAD + 7.2 + k * LH, s, b, FS, cc)); x0 += c.w; });
+    wr.forEach((L, i) => { const c = COLS[i], b = i === 1 || i === 7; let cc = b ? (x.type === 'in' ? C.in : C.out) : C.ink; if (i === 2 && x.type === 'in') { const pl = catPal(x.cat); rect(x0, top, c.w, rh, pl[1]); rect(x0, top, 3, rh, pl[0]); cc = pl[2]; } L.forEach((s, k) => txt(c.r ? x0 + c.w - 6 - tw(s, b, FS) : x0 + 6, top + PAD + 7.2 + k * LH, s, b, FS, cc)); x0 += c.w; });
     hline(M, M + TW, top + rh, C.line); top += rh;
   });
+  // Tanda tangan: dua blok (kiri/kanan) di akhir tabel; pindah ke halaman baru bila tidak muat. Ruang kosong di tengah untuk tanda tangan/stempel.
+  const SIG_H = 98;
+  if (top + 22 + SIG_H > PH - M - FOOT) { newPage(); head(false); top = tableTop; }
+  top += 22;
+  TTD.forEach((s, i) => {
+    const cx = M + TW * (i ? .78 : .22), c = (str, tp) => txt(cx - tw(str, false, 10) / 2, tp, str, false, 10, C.ink);
+    c(s.sapa, top + 10); c(s.jabatan, top + 23); c('( ' + s.nama + ' )', top + SIG_H - 4);
+  });
+  top += SIG_H;
   const N = pages.length;
   pages.forEach((pg, i) => { ops = pg; txt(M, PH - 18, 'PBMoney - Buku Kas Paguyuban', false, 8, C.mut); const s = 'Halaman ' + (i + 1) + ' dari ' + N; txt(PW - M - tw(s, false, 8), PH - 18, s, false, 8, C.mut); });
   const objs = ['<< /Type /Catalog /Pages 2 0 R >>', `<< /Type /Pages /Kids [${pages.map((_, i) => (5 + 2 * i) + ' 0 R').join(' ')}] /Count ${N} >>`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
