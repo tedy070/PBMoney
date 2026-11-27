@@ -210,6 +210,8 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 #lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px}
 #lb img{max-width:100%;max-height:100%;border-radius:8px}
 #lb button{position:absolute;top:calc(env(safe-area-inset-top) + 12px);right:14px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:26px}
+#lb button.dl{right:70px;font-size:22px}
+.lgs{display:flex;gap:8px;align-items:center;justify-content:space-between;color:var(--mut);font-size:13px;margin:4px 2px 10px}
 .clip{display:inline-flex;align-items:center;gap:2px;color:var(--pt);font-weight:700}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px}
 #lock input{max-width:220px;text-align:center;letter-spacing:8px;font-size:22px}
@@ -268,14 +270,21 @@ nav .add:active{transform:translateY(-10px) scale(.94)}
     <h1 class="gt-title">Kas paguyuban, <em>rapi &amp; transparan</em></h1>
     <p class="gt-sub">Catat kas masuk, kas keluar, dan iuran anggota Paguyuban Borez dalam satu buku kas.</p>
     <div id="gChoose">
-      <button class="btn" onclick="chooseMember()"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Masuk sebagai Anggota</button>
-      <p class="gt-hint">Hanya melihat, tanpa kata sandi</p>
+      <button class="btn" onclick="gateView('member')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Masuk sebagai Anggota</button>
+      <p class="gt-hint">Hanya melihat, tanpa kata sandi (cukup isi nama)</p>
       <button class="btn sec" onclick="gateView('admin')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Masuk sebagai Admin</button>
     </div>
     <div id="gAdmin" class="hide">
       <label>Kata sandi admin</label><div class="pw"><input id="gPw" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" onkeydown="if(event.key==='Enter')adminLogin()"><button type="button" class="eye" id="gEye" onmousedown="event.preventDefault()" onclick="togglePw()" aria-label="Tampilkan kata sandi" aria-pressed="false"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       <div class="err" id="gErr"></div>
       <div style="display:grid;gap:10px"><button class="btn" onclick="adminLogin()">Masuk</button><button class="btn sec" onclick="gateView('choose')">Kembali</button></div>
+    </div>
+    <div id="gMember" class="hide">
+      <label for="gNama">Nama Anda</label>
+      <input id="gNama" maxlength="40" autocomplete="name" placeholder="Nama asli atau nama panggilan" onkeydown="if(event.key==='Enter')memberLogin()">
+      <p class="gt-hint" style="margin:8px 2px 0;text-align:left">Wajib diisi dengan nama asli atau nama panggilan Anda. Nama dan waktu masuk akan tercatat dan dapat dilihat oleh admin.</p>
+      <div class="err" id="gNamaErr"></div>
+      <div style="display:grid;gap:10px;margin-top:6px"><button class="btn" onclick="memberLogin()">Masuk</button><button class="btn sec" onclick="gateView('choose')">Kembali</button></div>
     </div>
     <div id="gLoad" class="hide"><p class="gt-hint" style="margin:6px 0">Menghubungkan…</p></div>
     <div id="gFail" class="hide"><div class="err" id="gFailMsg" style="white-space:pre-wrap"></div><button class="btn sec" style="margin-top:12px" onclick="location.reload()">Coba lagi</button></div>
@@ -289,6 +298,8 @@ nav .add:active{transform:translateY(-10px) scale(.94)}
   <section id="v-his" class="hide"></section>
   <section id="v-set" class="hide"></section>
   <section id="v-ann" class="hide"></section>
+  <section id="v-ben" class="hide"></section>
+  <section id="v-log" class="hide"></section>
   <section id="v-str" class="hide"></section>
 </div>
 
@@ -332,14 +343,15 @@ const firebaseConfig = {
 const ADMIN_EMAIL = 'admin@pbmoney.app';
 const fbReady = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'].every(k => firebaseConfig[k]);
 
+const MNAME = 'pbmoney:mname';
 const KEY = 'pbmoney:state', BK = 'pbmoney:backups', PREF = 'pbmoney:prefs', ROLE = 'pbmoney:role', FOTO = 'pbmoney:foto', LAMP = 'pbmoney:lamp';
 function store(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
 function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast('Gagal menyimpan: penyimpanan browser penuh atau dimatikan.'); return false; } }
 const clean = o => JSON.parse(JSON.stringify(o));
 const toArr = v => Array.isArray(v) ? v : (v ? Object.values(v) : []);
 const ss = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
-let S = { tx: [], members: [], events: [], pengumuman: [], struktur: [], periode: '', foto: {}, ttd: [], stempel: true, iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
-let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, pengumuman: {}, struktur: {}, meta: '' };
+let S = { tx: [], members: [], events: [], pengumuman: [], bendahara: [], struktur: [], periode: '', foto: {}, ttd: [], stempel: true, iuran: 0, cats: { in: [], out: [] }, pinHash: '', name: '' };
+let cloud = false, isAdmin = true, loaded = false, listening = false, dirty = false, db = null, auth = null, remote = { tx: {}, members: {}, events: {}, pengumuman: {}, bendahara: {}, struktur: {}, meta: '' };
 let view = 'home', rep = ym(new Date()), his = { m: ym(new Date()), t: '', q: '' }, agr = ym(new Date()), agrF = '', mEdit = 0, agrTab = 'iuran', evF = 'up', evId = 0, popFor = 0, saveT, locked = false;
 
 const $ = id => document.getElementById(id);
@@ -355,13 +367,13 @@ function cats(t) { return (t === 'in' ? CAT_IN : CAT_OUT).concat(S.cats[t] || []
 function sum(list, t) { return list.filter(x => x.type === t).reduce((a, x) => a + x.amt, 0); }
 const sorted = () => S.tx.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, pengumuman: S.pengumuman, struktur: S.struktur, periode: S.periode, ttd: S.ttd, stempel: S.stempel, iuran: S.iuran, cats: S.cats, name: S.name });
+const dataOf = () => clean({ tx: S.tx, members: S.members, events: S.events, pengumuman: S.pengumuman, bendahara: S.bendahara, struktur: S.struktur, periode: S.periode, ttd: S.ttd, stempel: S.stempel, iuran: S.iuran, cats: S.cats, name: S.name });
 const metaOf = () => clean({ iuran: S.iuran, name: S.name, cats: S.cats, periode: S.periode, ttd: S.ttd, stempel: S.stempel });
 function savePrefs() { put(PREF, { pinHash: S.pinHash }); }
 function loadPrefs() { const p = store(PREF), old = store(KEY) || {}; S.pinHash = (p ? p.pinHash : old.pinHash) || ''; }
 function loadLocal() {
   const v = store(KEY) || {};
-  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.struktur = toArr(v.struktur); S.periode = v.periode || ''; S.ttd = toArr(v.ttd); S.stempel = v.stempel !== false; S.foto = store(FOTO) || {}; S.iuran = v.iuran || 0; S.name = v.name || '';
+  S.tx = toArr(v.tx); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.bendahara = toArr(v.bendahara); S.struktur = toArr(v.struktur); S.periode = v.periode || ''; S.ttd = toArr(v.ttd); S.stempel = v.stempel !== false; S.foto = store(FOTO) || {}; S.iuran = v.iuran || 0; S.name = v.name || '';
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
 }
 // Simpan: mode perangkat -> localStorage; mode cloud -> hanya selisih per item ke RTDB (aman bila dua admin mengedit bersamaan).
@@ -374,18 +386,19 @@ function save() {
     list.forEach(x => { const k = String(x.id), c = clean(x); seen[k] = 1; if (remote[n][k] !== ss(c)) up[n + '/' + k] = c; });
     Object.keys(remote[n]).forEach(k => { if (!seen[k]) up[n + '/' + k] = null; });
   };
-  sync('tx', S.tx); sync('members', S.members); sync('events', S.events); sync('pengumuman', S.pengumuman); sync('struktur', S.struktur);
+  sync('tx', S.tx); sync('members', S.members); sync('events', S.events); sync('pengumuman', S.pengumuman); sync('bendahara', S.bendahara); sync('struktur', S.struktur);
   const m = metaOf(); if (remote.meta !== ss(m)) up.meta = m;
   if (Object.keys(up).length) db.ref('kas').update(up).catch(e => toast('Gagal menyimpan: ' + e.message));
 }
 function applyRemote(v) {
-  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), pgs = Object.values(v.pengumuman || {}), sts = Object.values(v.struktur || {}), meta = v.meta || {};
+  const tx = Object.values(v.tx || {}), ms = Object.values(v.members || {}), evs = Object.values(v.events || {}), pgs = Object.values(v.pengumuman || {}), bns = Object.values(v.bendahara || {}), sts = Object.values(v.struktur || {}), meta = v.meta || {};
   remote.tx = {}; tx.forEach(x => remote.tx[x.id] = ss(x));
   remote.members = {}; ms.forEach(x => remote.members[x.id] = ss(x));
   remote.events = {}; evs.forEach(x => remote.events[x.id] = ss(x));
   remote.pengumuman = {}; pgs.forEach(x => remote.pengumuman[x.id] = ss(x));
+  remote.bendahara = {}; bns.forEach(x => remote.bendahara[x.id] = ss(x));
   remote.struktur = {}; sts.forEach(x => remote.struktur[x.id] = ss(x));
-  S.tx = tx; S.members = ms; S.events = evs; S.pengumuman = pgs; S.struktur = sts; S.periode = meta.periode || ''; S.ttd = toArr(meta.ttd); S.stempel = meta.stempel !== false; S.iuran = meta.iuran || 0; S.name = meta.name || '';
+  S.tx = tx; S.members = ms; S.events = evs; S.pengumuman = pgs; S.bendahara = bns; S.struktur = sts; S.periode = meta.periode || ''; S.ttd = toArr(meta.ttd); S.stempel = meta.stempel !== false; S.iuran = meta.iuran || 0; S.name = meta.name || '';
   S.cats = { in: toArr(meta.cats && meta.cats.in), out: toArr(meta.cats && meta.cats.out) };
   remote.meta = ss(metaOf()); loaded = true;
   if (!$('ov').classList.contains('hide')) dirty = true; else if (view === 'his' && $('hisBody')) hisBody(); else render();
@@ -401,15 +414,15 @@ async function tryUnlock() {
 // ══════════ NAVIGASI ══════════
 document.querySelectorAll('nav [data-v]').forEach(b => b.onclick = () => go(b.dataset.v));
 function go(v) {
-  view = v; if (v === 'str') attachFoto(); else detachFoto();
-  ['home', 'agr', 'rep', 'his', 'set', 'ann', 'str'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
-  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === (v === 'ann' || v === 'str' ? 'set' : v)));
+  view = v; if (v === 'str') attachFoto(); else detachFoto(); if (v === 'log') attachLog(); else detachLog();
+  ['home', 'agr', 'rep', 'his', 'set', 'ann', 'ben', 'str', 'log'].forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
+  document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === (['ann', 'ben', 'str', 'log'].includes(v) ? 'set' : v)));
   render(); scrollTo(0, 0);
 }
 function render() {
   closeMenu();
   if (cloud && !loaded) { $('v-' + view).innerHTML = '<div class="empty">Memuat data…</div>'; return; }
-  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet, ann: rAnn, str: rStr })[view]();
+  ({ home: rHome, agr: rAgr, rep: rRep, his: rHis, set: rSet, ann: () => rFeed('ann'), ben: () => rFeed('ben'), str: rStr, log: rLog })[view]();
 }
 
 function txRow(x) {
@@ -419,7 +432,7 @@ function txRow(x) {
 
 // ══════════ BERANDA ══════════
 function rHome() {
-  const m = ym(new Date()), mo = S.tx.filter(x => x.date.startsWith(m)), tin = sum(S.tx, 'in'), tout = sum(S.tx, 'out'), name = isAdmin ? (S.name || 'Pengurus').split(' ')[0] : 'Anggota';
+  const m = ym(new Date()), mo = S.tx.filter(x => x.date.startsWith(m)), tin = sum(S.tx, 'in'), tout = sum(S.tx, 'out'), name = isAdmin ? (S.name || 'Pengurus').split(' ')[0] : (memberName || 'Anggota').split(' ')[0];
   const recent = sorted().slice(0, 8);
   $('v-home').innerHTML = `<div class="top"><div><small>Halo, ${esc(name)}</small><h2>PBMoney</h2></div></div>
   <div class="hero"><small>Saldo kas</small><div class="num">${rp(tin - tout)}</div>
@@ -725,14 +738,23 @@ function delEvt() {
 
 // ══════════ PENGUMUMAN ══════════
 // Admin menulis, semua orang membaca. Kartu menampilkan judul + tanggal dibuat; isi muncul saat kartu diketuk.
-let annId = 0;
+let annId = 0, annK = 'ann';
+const ICO_ANN = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M15 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICO_BEN = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke="#fff" stroke-width="2"/><path d="M3 10.5h18" stroke="#fff" stroke-width="2"/><circle cx="16.5" cy="14.8" r="1.5" fill="#fff"/></svg>';
+// Pengumuman dan Bendahara memakai kode yang sama; hanya nama, ikon, dan daftar datanya yang berbeda.
+const FEED = {
+  ann: { key: 'pengumuman', label: 'Pengumuman', noun: 'pengumuman', ico: ICO_ANN, ph: 'Contoh: Rapat bulanan Desember' },
+  ben: { key: 'bendahara', label: 'Bendahara', noun: 'info bendahara', ico: ICO_BEN, ph: 'Contoh: Laporan kas bulan Desember' }
+};
+const feedList = k => S[FEED[k].key];
 const ICO_CAL = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
-const annSorted = () => S.pengumuman.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
-function rAnn() {
-  const card = a => `<div class="an" role="button" tabindex="0" onclick="openAnn(${a.id})" onkeydown="if(event.key==='Enter')openAnn(${a.id})"><div class="ai"><svg viewBox="0 0 24 24" fill="none"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><path d="M15 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="m"><b>${esc(a.title)}</b><small>${ICO_CAL}Dibuat ${fmtDate(a.date)}</small></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>`;
-  const l = annSorted();
-  $('v-ann').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Pengumuman</h2></div><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openAnnForm()">+ Buat baru</button></div>
-  ${l.length ? l.map(card).join('') : `<div class="empty">${isAdmin ? 'Belum ada pengumuman. Tekan Buat baru untuk menulis.' : 'Belum ada pengumuman.'}</div>`}`;
+const annSorted = k => feedList(k).slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+function rFeed(k) {
+  const F = FEED[k];
+  const card = a => `<div class="an" role="button" tabindex="0" onclick="openAnn(${a.id},'${k}')" onkeydown="if(event.key==='Enter')openAnn(${a.id},'${k}')"><div class="ai">${F.ico}</div><div class="m"><b>${esc(a.title)}</b><small>${ICO_CAL}Dibuat ${fmtDate(a.date)}</small></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>`;
+  const l = annSorted(k);
+  $('v-' + k).innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>${F.label}</h2></div><button class="btn sec adm" style="width:auto;padding:8px 14px;font-size:13px" onclick="openAnnForm(0,'${k}')">+ Buat baru</button></div>
+  ${l.length ? l.map(card).join('') : `<div class="empty">${isAdmin ? `Belum ada ${F.noun}. Tekan Buat baru untuk menulis.` : `Belum ada ${F.noun}.`}</div>`}`;
 }
 // ── Format teks: isi disimpan sebagai HTML yang dibersihkan lewat daftar putih tag (aman dari skrip) ──
 const TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', P: 'p', DIV: 'p', CODE: 'code', H1: 'h3', H2: 'h3', H3: 'h3', H4: 'h3', UL: 'ul', OL: 'ol', LI: 'li', A: 'a', BR: 'br' };
@@ -857,23 +879,24 @@ function annPaste(e) {
   const tx = (e.clipboardData || window.clipboardData).getData('text/plain');
   try { if (!document.execCommand('insertHTML', false, waHtml(tx))) document.execCommand('insertText', false, tx); } catch (x) { try { document.execCommand('insertText', false, tx); } catch (y) {} }
 }
-function openAnn(id) {
-  const a = S.pengumuman.find(x => x.id === id); if (!a) return;
+function openAnn(id, k) {
+  k = k || 'ann'; const F = FEED[k], a = feedList(k).find(x => x.id === id); if (!a) return;
   openOv(`<h3 style="align-items:flex-start;gap:10px"><span style="word-break:break-word">${esc(a.title)}</span><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
   <div style="color:var(--mut);font-size:13px;display:flex;align-items:center;gap:6px;margin:-4px 0 12px">${ICO_CAL}Dibuat ${fmtDate(a.date)}</div>
   <div class="card rt" style="padding:14px;word-break:break-word;line-height:1.65">${annHtml(a)}</div>${lampView(a.lamp)}
-  ${isAdmin ? `<div class="g2" style="margin-top:16px"><button class="btn sec" onclick="openAnnForm(${a.id})">Ubah</button><button class="btn dng" onclick="delAnn(${a.id})">Hapus</button></div>` : ''}`);
+  ${isAdmin ? `<div class="g2" style="margin-top:16px"><button class="btn sec" onclick="openAnnForm(${a.id},'${k}')">Ubah</button><button class="btn dng" onclick="delAnn(${a.id},'${k}')">Hapus</button></div>` : ''}`);
   lampFillList(a.lamp);
 }
-function openAnnForm(id) {
+function openAnnForm(id, k) {
   if (!isAdmin) return;
-  const a = S.pengumuman.find(x => x.id === id) || null; annId = a ? a.id : 0; lampReset(a ? a.lamp : []);
+  annK = k || 'ann'; const F = FEED[annK];
+  const a = feedList(annK).find(x => x.id === id) || null; annId = a ? a.id : 0; lampReset(a ? a.lamp : []);
   const init = a ? (a.html ? cleanHtml(a.html) : waHtml(a.body)) : '';
-  openOv(`<h3>${a ? 'Ubah pengumuman' : 'Buat pengumuman'}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
-  <label>Judul</label><input id="aTitle" maxlength="100" value="${esc(a ? a.title : '')}" placeholder="Contoh: Rapat bulanan Desember">
-  <label>Isi pengumuman</label>
+  openOv(`<h3>${a ? 'Ubah' : 'Buat'} ${F.noun}<button onclick="closeOv()" aria-label="Tutup">×</button></h3>
+  <label>Judul</label><input id="aTitle" maxlength="100" value="${esc(a ? a.title : '')}" placeholder="${esc(F.ph)}">
+  <label>Isi ${F.noun}</label>
   <div class="rtb" id="aTb" role="toolbar" aria-label="Format teks">${TB.map(([c, l, tt]) => `<button type="button" data-c="${c}" title="${tt}" aria-label="${tt}" aria-pressed="false" onmousedown="event.preventDefault()" onclick="fmt('${c}')">${l}</button>`).join('')}</div>
-  <div id="aBody" class="rte rt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Isi pengumuman" data-ph="Tulis isi pengumuman di sini…" onpaste="annPaste(event)" oninput="annInput(event)">${init}</div>
+  <div id="aBody" class="rte rt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Isi ${F.noun}" data-ph="Tulis isi ${F.noun} di sini…" onpaste="annPaste(event)" oninput="annInput(event)">${init}</div>
   <p style="color:var(--mut);font-size:12.5px;margin:8px 2px 0">Tips: ketik <b>*tebal*</b>, <i>_miring_</i>, <s>~coret~</s>, atau awali baris dengan <b>-</b> atau <b>1.</b> untuk daftar, seperti di WhatsApp.</p>
   <label>Lampiran (foto / file)</label><div id="lampBox"></div>
   <p style="color:var(--mut);font-size:12.5px;margin:10px 2px 0">${ICO_CAL.replace('class="ic"', 'class="ic" style="vertical-align:-2px;margin-right:6px"')}Tanggal dibuat ${a ? 'tetap' : 'terisi otomatis'}: ${fmtDate(a ? a.date : today())}</p>
@@ -883,20 +906,22 @@ function openAnnForm(id) {
 }
 function saveAnn() {
   if (!isAdmin) return;
+  const k = annK, F = FEED[k], key = F.key;
   const title = $('aTitle').value.trim(), html = waPost($('aBody').innerHTML), body = htmlText(html);
-  if (!title) return toast('Isi judul pengumuman.'); if (!body) return toast('Tulis isi pengumuman.');
-  if (body.length > 4000 || html.length > 12000) return toast('Isi pengumuman terlalu panjang.');
-  const old = S.pengumuman.find(x => x.id === annId);
+  if (!title) return toast('Isi judul ' + F.noun + '.'); if (!body) return toast('Tulis isi ' + F.noun + '.');
+  if (body.length > 4000 || html.length > 12000) return toast('Isi ' + F.noun + ' terlalu panjang.');
+  const old = S[key].find(x => x.id === annId);
   const a = { id: old ? old.id : Date.now(), title, body, html, date: old ? old.date : today() };
   if (LE.list.length) a.lamp = LE.list.map(x => Object.assign({}, x));
-  const fin = () => { S.pengumuman = old ? S.pengumuman.map(x => x.id === a.id ? a : x) : S.pengumuman.concat(a); save(); closeOv(); render(); toast('Pengumuman tersimpan'); };
+  const fin = () => { S[key] = old ? S[key].map(x => x.id === a.id ? a : x) : S[key].concat(a); save(); closeOv(); render(); toast(F.label + ' tersimpan'); };
   if (lampPending()) return lampCommit().then(ok => { if (ok) fin(); });
   fin();
 }
-function delAnn(id) {
-  if (!isAdmin || !confirm('Hapus pengumuman ini?')) return;
-  const old = S.pengumuman.find(x => x.id === id); if (old) lampPurge(old.lamp);
-  S.pengumuman = S.pengumuman.filter(x => x.id !== id); save(); closeOv(); render(); toast('Pengumuman dihapus');
+function delAnn(id, k) {
+  k = k || 'ann'; const F = FEED[k], key = F.key;
+  if (!isAdmin || !confirm('Hapus ' + F.noun + ' ini?')) return;
+  const old = S[key].find(x => x.id === id); if (old) lampPurge(old.lamp);
+  S[key] = S[key].filter(x => x.id !== id); save(); closeOv(); render(); toast(F.label + ' dihapus');
 }
 
 
@@ -1184,7 +1209,7 @@ function lampChip(a, edit) {
   LREG[a.id] = a;
   const ext = ((String(a.nama).match(/\.([A-Za-z0-9]+)$/) || [])[1] || 'file').toUpperCase().slice(0, 4);
   const thumb = a.tipe === 'img' ? `<div class="lt" id="lt_${a.id}" onclick="lampOpen('${a.id}')" role="button" aria-label="Lihat foto">…</div>` : `<div class="lt" onclick="lampOpen('${a.id}')" role="button" aria-label="Unduh file">${esc(ext)}</div>`;
-  const act = edit ? `<button type="button" class="lx" onclick="lampRemove('${a.id}')" aria-label="Hapus lampiran">×</button>` : (a.tipe === 'img' ? '' : `<button type="button" class="lx" style="color:var(--pt)" onclick="lampOpen('${a.id}')" aria-label="Unduh">↓</button>`);
+  const act = edit ? `<button type="button" class="lx" onclick="lampRemove('${a.id}')" aria-label="Hapus lampiran">×</button>` : `<button type="button" class="lx" style="color:var(--pt)" onclick="lampDownload('${a.id}')" aria-label="Unduh ${a.tipe === 'img' ? 'foto' : 'file'}" title="Unduh">↓</button>`;
   return `<div class="lc" id="lc_${a.id}">${thumb}<div class="ln">${esc(a.nama)}<small>${a.tipe === 'img' ? 'Foto' : 'File'} · ${fmtSize(a.ukuran)}</small></div>${act}</div>`;
 }
 async function lampFill(a) {
@@ -1203,20 +1228,30 @@ function lampDraw() {
     <p class="lh">Maksimal ${LAMP_MAX} lampiran. Foto diperkecil otomatis; file maksimal 1 MB (PDF, Word, Excel, PowerPoint, TXT, CSV).</p>`;
   LE.list.forEach(lampFill);
 }
-function lampLightbox(src) {
+function lampLightbox(src, id) {
   const old = $('lb'); if (old) old.remove();
-  const d = document.createElement('div'); d.id = 'lb'; d.innerHTML = `<img src="${src}" alt="Lampiran"><button type="button" aria-label="Tutup">×</button>`;
+  const d = document.createElement('div'); d.id = 'lb'; d.innerHTML = `<img src="${src}" alt="Lampiran"><button type="button" class="dl" aria-label="Unduh foto" title="Unduh">↓</button><button type="button" aria-label="Tutup">×</button>`;
+  d.querySelector('.dl').onclick = e => { e.stopPropagation(); lampDownload(id); };
   d.onclick = () => d.remove(); document.body.appendChild(d);
 }
-async function lampOpen(id) {
+// Unduh lampiran (foto maupun file) ke perangkat pengguna.
+async function lampDownload(id) {
   const a = LREG[id]; if (!a) return;
   const d = LE.news[id] || await lampGet(id, a.tipe);
   if (!okLampData(d, a.tipe)) return toast('Lampiran tidak tersedia.');
-  if (a.tipe === 'img') return lampLightbox(d);
   const ext = ((String(a.nama).match(/\.([A-Za-z0-9]+)$/) || [])[1] || '').toLowerCase();
-  if (!LAMP_MIME[ext]) return toast('Jenis file tidak didukung.');
+  let mime, nm = String(a.nama).replace(/[^\w.\- ]+/g, '_');
+  if (a.tipe === 'img') { mime = 'image/jpeg'; if (!/\.jpe?g$/i.test(nm)) nm = nm.replace(/\.[^.]+$/, '') + '.jpg'; }
+  else { mime = LAMP_MIME[ext]; if (!mime) return toast('Jenis file tidak didukung.'); }
   const bin = atob(d.split(',')[1]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-  dlBlob(String(a.nama).replace(/[^\w.\- ]+/g, '_'), new Blob([u], { type: LAMP_MIME[ext] }));
+  dlBlob(nm, new Blob([u], { type: mime })); toast('Mengunduh ' + nm);
+}
+async function lampOpen(id) {
+  const a = LREG[id]; if (!a) return;
+  if (a.tipe !== 'img') return lampDownload(id);
+  const d = LE.news[id] || await lampGet(id, a.tipe);
+  if (!okLampData(d, a.tipe)) return toast('Lampiran tidak tersedia.');
+  lampLightbox(d, id);
 }
 // Isi lampiran ditulis dulu; data transaksi/pengumuman baru disimpan sesudahnya, jadi tidak ada data yang menunjuk lampiran yang hilang.
 async function lampCommit() {
@@ -1464,8 +1499,9 @@ function cUse() { const v = cEval(); if (v === null || v < 0) return toast('Hasi
 
 // ══════════ PENGATURAN ══════════
 function rSet() {
-  const role = cloud ? (isAdmin ? 'Admin' : 'Anggota (hanya melihat)') : 'Mode perangkat';
+  const role = cloud ? (isAdmin ? 'Admin' : 'Anggota' + (memberName ? ' · ' + esc(memberName) : '')) : 'Mode perangkat';
   const adm = !isAdmin ? '' : `
+    ${cloud ? `<button class="r" onclick="go('log')">Riwayat login anggota<span class="rt">Lihat<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>` : ''}
     <button class="r" onclick="editName()">Nama pengelola<span>${esc(S.name || 'Belum diisi')}</span></button>
     <button class="r" onclick="openCats()">Kategori kustom<span>${S.cats.in.length + S.cats.out.length} kategori</span></button>
     <button class="r" onclick="openTtd()">Penandatangan PDF<span>${S.stempel !== false ? 'Stempel aktif' : 'Tanpa stempel'}</span></button>`;
@@ -1482,6 +1518,7 @@ function rSet() {
   $('v-set').innerHTML = `<div class="top"><h2>Pengaturan</h2></div>
   <div class="set"><div class="r"><b>Peran</b><span>${role}</span></div>
     <button class="r" onclick="go('ann')">Pengumuman<span class="rt">${S.pengumuman.length ? `<i class="cnt">${S.pengumuman.length}</i>` : 'Belum ada'}<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>
+    <button class="r" onclick="go('ben')">Bendahara<span class="rt">${S.bendahara.length ? `<i class="cnt">${S.bendahara.length}</i>` : 'Belum ada'}<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>
     <button class="r" onclick="go('str')">Struktur Organisasi<span class="rt">Bagan<svg class="ic" style="width:16px;height:16px;stroke-width:2.6" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>${adm}
     <button class="r" onclick="setPin()">PIN kunci di perangkat ini<span>${S.pinHash ? 'Aktif' : 'Mati'}</span></button>
   </div>${bk}${foot}
@@ -1554,7 +1591,7 @@ async function restore(k) {
 }
 function applyBackup(v) {
   if (!isAdmin) return;
-  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.struktur = toArr(v.struktur).filter(x => x && x.id && x.nama); S.periode = v.periode || S.periode; if (toArr(v.ttd).length) S.ttd = toArr(v.ttd); if (v.stempel !== undefined) S.stempel = v.stempel !== false; S.iuran = v.iuran || 0; S.name = v.name || S.name;
+  S.tx = toArr(v.tx).filter(x => x && x.date && x.amt >= 0); S.members = toArr(v.members); S.events = toArr(v.events); S.pengumuman = toArr(v.pengumuman); S.bendahara = toArr(v.bendahara); S.struktur = toArr(v.struktur).filter(x => x && x.id && x.nama); S.periode = v.periode || S.periode; if (toArr(v.ttd).length) S.ttd = toArr(v.ttd); if (v.stempel !== undefined) S.stempel = v.stempel !== false; S.iuran = v.iuran || 0; S.name = v.name || S.name;
   S.cats = { in: toArr(v.cats && v.cats.in), out: toArr(v.cats && v.cats.out) };
   save(); closeOv(); render(); toast('Data dipulihkan');
 }
@@ -1566,7 +1603,8 @@ function importFile(el) {
 
 // ══════════ PERAN & FIREBASE ══════════
 function gateView(n) {
-  ['Choose', 'Admin', 'Load', 'Fail'].forEach(k => $('g' + k).classList.toggle('hide', k.toLowerCase() !== n));
+  ['Choose', 'Admin', 'Member', 'Load', 'Fail'].forEach(k => $('g' + k).classList.toggle('hide', k.toLowerCase() !== n));
+  if (n === 'member') { $('gNamaErr').textContent = ''; try { $('gNama').value = localStorage.getItem(MNAME) || ''; } catch (e) {} setTimeout(() => $('gNama').focus(), 50); }
   if (n === 'admin') { $('gErr').textContent = ''; $('gPw').value = ''; showPw(false); setTimeout(() => $('gPw').focus(), 50); }
 }
 const EYE_ON = '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>', EYE_OFF = '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 19c-6.4 0-10-7-10-7a18 18 0 0 1 4.1-5M9.9 5.2A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.2 3.2M1 1l22 22M14.1 14.1a3 3 0 0 1-4.2-4.2"/>';
@@ -1582,14 +1620,49 @@ function enterApp() {
 }
 function showGate() {
   if (listening && db) { db.ref('kas').off(); listening = false; }
-  loaded = false; S.tx = []; S.members = []; S.events = []; S.pengumuman = []; S.struktur = []; S.foto = {}; detachFoto(); dirty = false;
+  loaded = false; S.tx = []; S.members = []; S.events = []; S.pengumuman = []; S.bendahara = []; S.struktur = []; S.foto = {}; detachFoto(); detachLog(); dirty = false;
   ['app', 'nav'].forEach(i => $(i).classList.add('hide')); $('gate').classList.remove('hide'); gateView('choose');
 }
 function connect() {
   if (listening) return; listening = true;
   db.ref('kas').on('value', s => applyRemote(s.val() || {}), e => toast('Gagal membaca data: ' + e.message));
 }
-function chooseMember() { try { localStorage.setItem(ROLE, 'member'); } catch (e) {} isAdmin = false; connect(); enterApp(); }
+// ── Login anggota: wajib isi nama; nama + waktu server dicatat di logins/ dan hanya bisa dibaca admin ──
+let memberName = '', resumeLogged = false;
+const cleanName = x => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+const okName = x => x.length >= 1 && /\p{L}/u.test(x) && /^[\p{L}\p{N} .,'’\-]+$/u.test(x);
+function memberLogin() {
+  const n = cleanName($('gNama').value), er = $('gNamaErr'); er.textContent = '';
+  if (!n) { er.textContent = 'Nama wajib diisi (nama asli atau nama panggilan).'; return; }
+  if (!okName(n)) { er.textContent = 'Isi nama dengan huruf (minimal 1 karakter), tanpa simbol aneh.'; return; }
+  try { localStorage.setItem(ROLE, 'member'); localStorage.setItem(MNAME, n); } catch (e) {}
+  memberName = n; isAdmin = false; connect(); enterApp(); logLogin(n);
+}
+function logLogin(n) {
+  if (!cloud || !db) return;
+  try { db.ref('logins').push({ name: n, ts: firebase.database.ServerValue.TIMESTAMP }).catch(e => console.warn('Riwayat login gagal dicatat:', e.message)); } catch (e) {}
+}
+let logRef = null, LOGS = [];
+function attachLog() {
+  if (logRef || !cloud || !db || !isAdmin) return;
+  logRef = db.ref('logins').limitToLast(500);
+  logRef.on('value', sn => { LOGS = []; sn.forEach(c => { const v = c.val(); if (v && typeof v.ts === 'number') LOGS.push({ k: c.key, name: String(v.name || ''), ts: v.ts }); }); if (view === 'log') rLog(); }, e => toast('Gagal membaca riwayat login: ' + e.message));
+}
+function detachLog() { if (logRef) { logRef.off(); logRef = null; } }
+function rLog() {
+  const l = LOGS.slice().sort((a, b) => b.ts - a.ts), uniq = new Set(l.map(x => x.name.trim().toLowerCase())).size;
+  const row = x => {
+    const d = new Date(x.ts), tgl = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+    return `<div class="tx" style="cursor:default"><div class="dot in">${esc(x.name.trim().charAt(0).toUpperCase())}</div><div class="m"><b>${esc(x.name)}</b><small>${tgl}</small></div><div class="a" style="color:var(--mut);font-weight:600;font-size:13px">${jam}</div></div>`;
+  };
+  $('v-log').innerHTML = `<div class="top"><div style="display:flex;align-items:center;gap:6px"><button onclick="go('set')" aria-label="Kembali" style="width:36px;height:36px;font-size:24px;line-height:1;color:var(--pt);margin-left:-8px">‹</button><h2>Login anggota</h2></div>${l.length ? `<button class="btn sec" style="width:auto;padding:8px 14px;font-size:13px" onclick="clearLogs()">Hapus semua</button>` : ''}</div>
+  <div class="lgs"><span>${l.length} login · ${uniq} nama berbeda</span><span>Waktu sesuai perangkat Anda</span></div>
+  <div class="card">${l.length ? l.map(row).join('') : '<div class="empty">Belum ada anggota yang login.</div>'}</div>`;
+}
+function clearLogs() {
+  if (!isAdmin || !cloud || !confirm('Hapus seluruh riwayat login anggota?')) return;
+  db.ref('logins').remove().then(() => toast('Riwayat login dihapus')).catch(e => toast('Gagal menghapus: ' + e.message));
+}
 async function adminLogin() {
   const pw = $('gPw').value; $('gErr').textContent = '';
   if (!pw) { $('gErr').textContent = 'Isi kata sandi admin.'; return; }
@@ -1617,7 +1690,8 @@ async function startCloud() {
     else {
       if (u) auth.signOut();
       isAdmin = false;
-      if (localStorage.getItem(ROLE) === 'member') { connect(); enterApp(); } else showGate();
+      const mn = cleanName(localStorage.getItem(MNAME));
+      if (localStorage.getItem(ROLE) === 'member' && okName(mn)) { memberName = mn; connect(); enterApp(); if (!resumeLogged) { resumeLogged = true; logLogin(mn); } } else showGate();
     }
   });
 }
