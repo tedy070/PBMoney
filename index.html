@@ -1070,18 +1070,60 @@ function strForm(id) {
   <div style="display:grid;gap:8px;margin-top:16px"><button class="btn" onclick="saveStr()">Simpan</button>${e ? '<button class="btn dng" onclick="delStr(' + e.id + ')">Hapus posisi</button>' : ''}</div>`);
   atsInfo();
 }
-async function fotoFromFile(file) {
-  const bmp = window.createImageBitmap ? await createImageBitmap(file) : await new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => no(new Error('gambar')); im.src = u; });
-  const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, s = Math.min(w, h);
-  const enc = (size, q) => { const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, size, size); x.drawImage(bmp, (w - s) / 2, (h - s) / 2, s, s, 0, 0, size, size); return c.toDataURL('image/jpeg', q); };
-  let out = enc(256, .82); if (out.length > 60000) out = enc(256, .68); if (out.length > 60000) out = enc(192, .68);
-  return out;
+async function bmpFrom(file) {
+  return window.createImageBitmap ? await createImageBitmap(file) : await new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => no(new Error('gambar')); im.src = u; });
+}
+// Pemotong foto manual: geser untuk mengatur posisi, slider / cubit / scroll untuk zoom. Hasil: JPEG persegi 256 px (lingkaran hanya panduan tampilan).
+function cropPhoto(bmp) {
+  return new Promise(done => {
+    const W = bmp.width || bmp.naturalWidth, H = bmp.height || bmp.naturalHeight, M = Math.min(W, H);
+    let z = 1, cx = W / 2, cy = H / 2;
+    const el = document.createElement('div'); el.id = 'crop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Potong foto');
+    el.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(6,10,24,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;touch-action:none';
+    const bw = 'min(86vw,340px)';
+    el.innerHTML = `<b style="color:#fff;font-family:Sora,sans-serif;font-size:18px">Potong foto</b>
+    <p style="color:#c7d2ee;font-size:13px;margin:0;text-align:center">Geser foto dan atur zoom sampai pas di dalam lingkaran.</p>
+    <div id="cropBox" style="position:relative;width:${bw};height:${bw};border-radius:14px;overflow:hidden;background:#000;cursor:grab;touch-action:none"><canvas id="cropCv" style="width:100%;height:100%;display:block"></canvas><div style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.58);border:2px solid #fff;pointer-events:none"></div></div>
+    <div style="display:flex;align-items:center;gap:12px;width:${bw};color:#fff;font-size:20px"><span aria-hidden="true">−</span><input id="cropZ" type="range" min="1" max="4" step="0.01" value="1" style="flex:1" aria-label="Zoom"><span aria-hidden="true">+</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:${bw}"><button type="button" class="btn sec" id="cropNo">Batal</button><button type="button" class="btn" id="cropOk">Gunakan</button></div>`;
+    document.body.appendChild(el);
+    const box = $('cropBox'), cv = $('cropCv'), zr = $('cropZ'), ctx = cv.getContext('2d');
+    const side = () => M / z, clamp = () => { const sd = side(); cx = Math.min(W - sd / 2, Math.max(sd / 2, cx)); cy = Math.min(H - sd / 2, Math.max(sd / 2, cy)); };
+    const px = Math.round(box.clientWidth * Math.min(2, window.devicePixelRatio || 1)); cv.width = cv.height = px;
+    const draw = () => { clamp(); const sd = side(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px); ctx.drawImage(bmp, cx - sd / 2, cy - sd / 2, sd, sd, 0, 0, px, px); };
+    const setZ = v => { z = Math.min(4, Math.max(1, v)); zr.value = z; draw(); };
+    zr.oninput = () => setZ(parseFloat(zr.value));
+    const P = new Map(); let pd = 0;
+    box.onpointerdown = e => { box.setPointerCapture(e.pointerId); P.set(e.pointerId, { x: e.clientX, y: e.clientY }); pd = 0; box.style.cursor = 'grabbing'; };
+    box.onpointermove = e => {
+      const q = P.get(e.pointerId); if (!q) return;
+      const nx = e.clientX, ny = e.clientY;
+      if (P.size === 1) { const k = side() / box.clientWidth; cx -= (nx - q.x) * k; cy -= (ny - q.y) * k; q.x = nx; q.y = ny; draw(); }
+      else if (P.size === 2) { q.x = nx; q.y = ny; const [a, b] = [...P.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pd) setZ(z * d / pd); pd = d; }
+    };
+    const up = e => { P.delete(e.pointerId); pd = 0; if (!P.size) box.style.cursor = 'grab'; };
+    box.onpointerup = up; box.onpointercancel = up;
+    box.onwheel = e => { e.preventDefault(); setZ(z * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); };
+    const close = v => { document.removeEventListener('keydown', key); el.remove(); done(v); };
+    const key = e => { if (e.key === 'Escape') close(null); };
+    document.addEventListener('keydown', key);
+    $('cropNo').onclick = () => close(null);
+    $('cropOk').onclick = () => {
+      clamp(); const sd = side();
+      const enc = (size, q) => { const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, size, size); x.drawImage(bmp, cx - sd / 2, cy - sd / 2, sd, sd, 0, 0, size, size); return c.toDataURL('image/jpeg', q); };
+      let out = enc(256, .82); if (out.length > 60000) out = enc(256, .68); if (out.length > 60000) out = enc(192, .68);
+      close(out);
+    };
+    draw();
+  });
 }
 async function strPhoto(inp) {
   const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
   if (!/^image\//.test(f.type)) return toast('Pilih berkas gambar (JPG atau PNG).');
   if (f.size > 15 * 1024 * 1024) return toast('Foto terlalu besar (maksimal 15 MB).');
-  try { strPend = await fotoFromFile(f); drawPf(); } catch (e) { toast('Foto tidak bisa dibaca.'); }
+  let bmp; try { bmp = await bmpFrom(f); } catch (e) { return toast('Foto tidak bisa dibaca.'); }
+  const out = await cropPhoto(bmp);
+  if (out) { strPend = out; drawPf(); }
 }
 function strDelFoto() { strPend = ''; drawPf(); }
 async function strSaveFoto(id, data) {
