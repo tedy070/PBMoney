@@ -169,7 +169,7 @@ select{min-width:0;max-width:100%;text-overflow:ellipsis}
 .mc small.ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rt code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--sf2);padding:1px 5px;border-radius:5px;font-size:.92em}
 .pf{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none;font-family:Sora,sans-serif;font-weight:700;font-size:19px;box-shadow:0 0 0 2.5px #fff,0 0 0 3.5px rgba(16,32,74,.14)}
-.pf img{width:100%;height:100%;object-fit:cover;display:block}.pf.mid{width:72px;height:72px;font-size:27px}.pf.big{width:96px;height:96px;font-size:34px}
+.pf img{width:100%;height:100%;object-fit:cover;display:block}.pf.mid{width:72px;height:72px;font-size:27px}.pf.big{width:96px;height:96px;font-size:34px}.pf.xl{width:min(230px,62vw);height:min(230px,62vw);font-size:84px;box-shadow:0 0 0 4px #fff,0 0 0 5px rgba(16,32,74,.14),0 18px 40px -14px rgba(16,32,74,.45)}
 .treewrap{display:flex;overflow-x:auto;padding:8px 2px 20px;-webkit-overflow-scrolling:touch}
 .tree{position:relative;margin:0 auto;flex:none}.tree svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
 .nd{position:absolute;width:100px;height:128px;border-radius:16px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;background:linear-gradient(160deg,var(--sf-hi),var(--sf-lo));box-shadow:inset 0 1px 0 var(--hl),0 1px 2px var(--sh1),0 8px 16px -6px var(--sh2),0 18px 30px -16px var(--sh3);transition:transform .16s ease}
@@ -1032,14 +1032,14 @@ function attachFoto() {
   db.ref('fotoStruktur').on('value', s => { S.foto = s.val() || {}; if (view === 'str') rStr(); }, e => toast('Gagal memuat foto: ' + e.message));
 }
 function detachFoto() { if (fotoOn && db) { db.ref('fotoStruktur').off(); fotoOn = false; } }
+// Pratinjau profil: foto besar + nama + jabatan saja. Admin mendapat tombol Ubah.
 function viewStr(id) {
   const n = S.struktur.find(x => x.id === id); if (!n) return;
-  const ups = strPar(n).map(p => S.struktur.find(x => x.id === p)).filter(Boolean), kids = strKids(n.id);
   openOv(`<h3 style="justify-content:flex-end"><button onclick="closeOv()" aria-label="Tutup">×</button></h3>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-10px">${pfHtml(n.id, n.nama, 'big')}<b style="font-size:20px;font-family:Sora,sans-serif;text-align:center;word-break:break-word">${esc(n.nama)}</b><span style="background:color-mix(in srgb,var(--pri) 12%,transparent);color:var(--pt);font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase;padding:5px 14px;border-radius:14px;text-align:center;word-break:break-word">${esc(n.jabatan)}</span></div>
-  <div class="card" style="padding:14px;margin-top:16px"><small style="color:var(--mut)">${ups.length > 1 ? 'Atasan (' + ups.length + ')' : 'Atasan'}</small><div style="font-weight:700;margin:2px 0 12px">${ups.length ? ups.map(u => esc(u.nama) + ' · ' + esc(u.jabatan)).join('<br>') : '—'}</div><small style="color:var(--mut)">Bawahan</small><div style="font-weight:700;margin-top:2px">${kids.length ? kids.map(k => esc(k.nama)).join(', ') : '—'}</div></div>`);
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:-6px;padding:6px 0 4px">${pfHtml(n.id, n.nama, 'xl')}<b style="font-size:22px;font-family:Sora,sans-serif;text-align:center;word-break:break-word;margin-top:4px">${esc(n.nama)}</b><span style="background:color-mix(in srgb,var(--pri) 12%,transparent);color:var(--pt);font-weight:700;font-size:13px;letter-spacing:.4px;text-transform:uppercase;padding:6px 16px;border-radius:16px;text-align:center;word-break:break-word">${esc(n.jabatan)}</span></div>
+  ${isAdmin ? `<button class="btn sec" style="margin-top:18px" onclick="strForm(${n.id})">Ubah profil</button>` : ''}`);
 }
-function openStr(id) { if (!isAdmin) return id ? viewStr(id) : null; strForm(id); }
+function openStr(id) { if (id) return viewStr(id); if (isAdmin) strForm(); }
 function drawPf() {
   const w = $('sPfWrap'); if (!w) return;
   const cur = strPend !== null ? strPend : S.foto[strId];
